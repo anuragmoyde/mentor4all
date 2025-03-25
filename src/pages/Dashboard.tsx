@@ -1,10 +1,89 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, Clock, DollarSign, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard: React.FC = () => {
   const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [pastSessions, setPastSessions] = useState<any[]>([]);
+
+  // Fetch sessions data
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
+    queryKey: ['mentee-sessions', user?.id],
+    queryFn: async () => {
+      if (!user) return { upcoming: [], past: [] };
+      
+      const now = new Date().toISOString();
+      
+      // Fetch upcoming sessions
+      const { data: upcoming, error: upcomingError } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          mentors (
+            *,
+            profiles (
+              first_name,
+              last_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('mentee_id', user.id)
+        .gte('date_time', now)
+        .order('date_time', { ascending: true });
+      
+      if (upcomingError) {
+        console.error('Error fetching upcoming sessions:', upcomingError);
+      }
+      
+      // Fetch past sessions
+      const { data: past, error: pastError } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          mentors (
+            *,
+            profiles (
+              first_name,
+              last_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('mentee_id', user.id)
+        .lt('date_time', now)
+        .order('date_time', { ascending: false });
+      
+      if (pastError) {
+        console.error('Error fetching past sessions:', pastError);
+      }
+      
+      return { 
+        upcoming: upcoming || [], 
+        past: past || [] 
+      };
+    },
+    enabled: !!user,
+  });
+
+  useEffect(() => {
+    // Set sessions data once fetched
+    if (sessionsData) {
+      setUpcomingSessions(sessionsData.upcoming);
+      setPastSessions(sessionsData.past);
+      setDashboardLoading(false);
+    }
+  }, [sessionsData]);
 
   useEffect(() => {
     // Redirect if not logged in
