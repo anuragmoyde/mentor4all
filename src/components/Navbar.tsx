@@ -1,14 +1,25 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
-import Button from './Button';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -28,6 +39,11 @@ const Navbar: React.FC = () => {
     { name: 'Find Mentors', path: '/mentors' },
     { name: 'Group Sessions', path: '/group-sessions' },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
   
   return (
     <header 
@@ -60,8 +76,44 @@ const Navbar: React.FC = () => {
           </ul>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">Sign In</Button>
-            <Button variant="default" size="sm">Sign Up</Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || ""} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-0.5 leading-none">
+                      <p className="font-medium text-sm">{profile?.first_name} {profile?.last_name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>Sign In</Button>
+                <Button variant="default" size="sm" onClick={() => navigate('/auth')}>Sign Up</Button>
+              </>
+            )}
           </div>
         </nav>
         
@@ -93,11 +145,58 @@ const Navbar: React.FC = () => {
                   </Link>
                 </li>
               ))}
+              
+              {user && (
+                <>
+                  <li>
+                    <Link 
+                      to="/dashboard" 
+                      className={cn(
+                        "block py-2 text-base font-medium transition-all",
+                        location.pathname === '/dashboard' ? "text-primary" : "text-foreground/80"
+                      )}
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      to="/profile" 
+                      className={cn(
+                        "block py-2 text-base font-medium transition-all",
+                        location.pathname === '/profile' ? "text-primary" : "text-foreground/80"
+                      )}
+                    >
+                      Profile
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
             
             <div className="mt-6 flex flex-col space-y-4">
-              <Button variant="ghost" className="w-full justify-center">Sign In</Button>
-              <Button variant="default" className="w-full justify-center">Sign Up</Button>
+              {user ? (
+                <Button variant="destructive" className="w-full justify-center" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-center"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    className="w-full justify-center"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

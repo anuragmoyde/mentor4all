@@ -9,7 +9,297 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      group_enrollments: {
+        Row: {
+          created_at: string
+          group_session_id: string
+          id: string
+          payment_status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_session_id: string
+          id?: string
+          payment_status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_session_id?: string
+          id?: string
+          payment_status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_enrollments_group_session_id_fkey"
+            columns: ["group_session_id"]
+            isOneToOne: false
+            referencedRelation: "group_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_sessions: {
+        Row: {
+          capacity: number
+          category: string
+          created_at: string
+          date_time: string
+          description: string | null
+          duration: number
+          enrolled: number | null
+          id: string
+          mentor_id: string
+          price: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity: number
+          category: string
+          created_at?: string
+          date_time: string
+          description?: string | null
+          duration: number
+          enrolled?: number | null
+          id?: string
+          mentor_id: string
+          price: number
+          status: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          category?: string
+          created_at?: string
+          date_time?: string
+          description?: string | null
+          duration?: number
+          enrolled?: number | null
+          id?: string
+          mentor_id?: string
+          price?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_sessions_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentors: {
+        Row: {
+          availability: Json | null
+          average_rating: number | null
+          expertise: string[] | null
+          hourly_rate: number
+          id: string
+          industry: string | null
+          review_count: number | null
+          years_experience: number | null
+        }
+        Insert: {
+          availability?: Json | null
+          average_rating?: number | null
+          expertise?: string[] | null
+          hourly_rate: number
+          id: string
+          industry?: string | null
+          review_count?: number | null
+          years_experience?: number | null
+        }
+        Update: {
+          availability?: Json | null
+          average_rating?: number | null
+          expertise?: string[] | null
+          hourly_rate?: number
+          id?: string
+          industry?: string | null
+          review_count?: number | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentors_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+          user_type: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+          user_type: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          group_session_id: string | null
+          id: string
+          mentor_id: string
+          rating: number
+          reviewer_id: string
+          session_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          group_session_id?: string | null
+          id?: string
+          mentor_id: string
+          rating: number
+          reviewer_id: string
+          session_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          group_session_id?: string | null
+          id?: string
+          mentor_id?: string
+          rating?: number
+          reviewer_id?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_group_session_id_fkey"
+            columns: ["group_session_id"]
+            isOneToOne: false
+            referencedRelation: "group_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          date_time: string
+          description: string | null
+          duration: number
+          id: string
+          mentee_id: string
+          mentor_id: string
+          payment_status: string
+          price: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_time: string
+          description?: string | null
+          duration: number
+          id?: string
+          mentee_id: string
+          mentor_id: string
+          payment_status: string
+          price: number
+          status: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_time?: string
+          description?: string | null
+          duration?: number
+          id?: string
+          mentee_id?: string
+          mentor_id?: string
+          payment_status?: string
+          price?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
