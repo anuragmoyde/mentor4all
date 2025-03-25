@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import MentorDashboard from "./pages/MentorDashboard";
 import Profile from "./pages/Profile";
 import MentorDirectory from "./pages/MentorDirectory";
 import GroupSessions from "./pages/GroupSessions";
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/mentor-dashboard" element={<MentorDashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/mentors" element={<MentorDirectory />} />
                 <Route path="/group-sessions" element={<GroupSessions />} />

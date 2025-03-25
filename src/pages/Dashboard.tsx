@@ -1,78 +1,28 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, DollarSign, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard: React.FC = () => {
   const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [upcomingSessions, setUpcomingSessions] = useState([]);
-  const [pastSessions, setPastSessions] = useState([]);
-  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   useEffect(() => {
     // Redirect if not logged in
     if (!isLoading && !user) {
       navigate('/auth');
+      return;
     }
-  }, [user, isLoading, navigate]);
 
-  useEffect(() => {
-    const fetchSessions = async () => {
-      if (!user) return;
-
-      try {
-        setDashboardLoading(true);
-        
-        // Upcoming sessions query
-        const { data: upcoming, error: upcomingError } = await supabase
-          .from('sessions')
-          .select(`
-            *,
-            mentors:mentor_id(
-              id,
-              profiles:id(first_name, last_name, avatar_url)
-            )
-          `)
-          .eq('mentee_id', user.id)
-          .gte('date_time', new Date().toISOString())
-          .order('date_time', { ascending: true });
-
-        if (upcomingError) throw upcomingError;
-        setUpcomingSessions(upcoming || []);
-
-        // Past sessions query
-        const { data: past, error: pastError } = await supabase
-          .from('sessions')
-          .select(`
-            *,
-            mentors:mentor_id(
-              id,
-              profiles:id(first_name, last_name, avatar_url)
-            )
-          `)
-          .eq('mentee_id', user.id)
-          .lt('date_time', new Date().toISOString())
-          .order('date_time', { ascending: false });
-
-        if (pastError) throw pastError;
-        setPastSessions(past || []);
-      } catch (error) {
-        console.error('Error fetching sessions:', error);
-      } finally {
-        setDashboardLoading(false);
+    // Redirect based on user type
+    if (!isLoading && user && profile) {
+      if (profile.user_type === 'mentor') {
+        navigate('/mentor-dashboard');
       }
-    };
+      // Stay on this page for mentees
+    }
+  }, [user, profile, isLoading, navigate]);
 
-    fetchSessions();
-  }, [user]);
-
-  if (isLoading || !user) {
+  if (isLoading || !user || !profile) {
     return (
       <div className="container mx-auto py-16 flex justify-center">
         <div className="animate-pulse">Loading...</div>

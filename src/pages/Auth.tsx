@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
@@ -21,6 +22,9 @@ const signupSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
   confirmPassword: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+  userType: z.enum(['mentor', 'mentee'], { 
+    required_error: "Please select whether you're joining as a mentor or mentee" 
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ['confirmPassword'],
@@ -58,6 +62,7 @@ const Auth: React.FC = () => {
       email: '',
       password: '',
       confirmPassword: '',
+      userType: 'mentee',
     },
   });
 
@@ -80,7 +85,8 @@ const Auth: React.FC = () => {
         values.email,
         values.password,
         values.firstName,
-        values.lastName
+        values.lastName,
+        values.userType
       );
       if (!error) {
         navigate('/dashboard');
@@ -173,6 +179,7 @@ const Auth: React.FC = () => {
                     )}
                   />
                 </div>
+                
                 <FormField
                   control={signupForm.control}
                   name="email"
@@ -186,6 +193,42 @@ const Auth: React.FC = () => {
                     </FormItem>
                   )}
                 />
+                
+                <FormField
+                  control={signupForm.control}
+                  name="userType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>I want to join as a</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex gap-6"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="mentee" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              Mentee (seeking guidance)
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="mentor" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">
+                              Mentor (offering expertise)
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <FormField
                   control={signupForm.control}
                   name="password"

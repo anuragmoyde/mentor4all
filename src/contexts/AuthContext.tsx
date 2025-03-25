@@ -19,7 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any, data: any }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, userType?: 'mentor' | 'mentee') => Promise<{ error: any, data: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
 }
@@ -100,14 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: result.error };
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, userType: 'mentor' | 'mentee' = 'mentee') => {
     const result = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           first_name: firstName,
-          last_name: lastName
+          last_name: lastName,
+          user_type: userType
         }
       }
     });
@@ -119,6 +120,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
     } else {
+      // If the user is signing up as a mentor, we need to create a record in the mentors table
+      if (userType === 'mentor' && result.data.user) {
+        const { error: mentorError } = await supabase
+          .from('mentors')
+          .insert({
+            id: result.data.user.id,
+            hourly_rate: 0, // Default hourly rate
+            expertise: [], // Empty expertise array
+          });
+          
+        if (mentorError) {
+          console.error('Error creating mentor profile:', mentorError);
+          toast({
+            title: "Mentor profile creation failed",
+            description: "Your account was created, but there was an issue setting up your mentor profile. Please contact support.",
+            variant: "destructive"
+          });
+        }
+      }
+
       toast({
         title: "Account created",
         description: "You have successfully created your account.",
