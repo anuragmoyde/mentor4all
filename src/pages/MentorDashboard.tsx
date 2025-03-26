@@ -1,19 +1,33 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, Users } from 'lucide-react';
+import { Calendar, Clock, Users, BadgeIndianRupee } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BadgeIndianRupee } from 'lucide-react';
 
 const MentorDashboard = () => {
   const { user, profile, isLoading } = useAuth();
   const navigate = useNavigate();
   
+  // Redirect if not logged in or if user is a mentee
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      
+      if (profile?.user_type !== 'mentor') {
+        console.log('Redirecting to mentee dashboard, user type:', profile?.user_type);
+        navigate('/dashboard');
+        return;
+      }
+    }
+  }, [user, profile, isLoading, navigate]);
+
   // Fetch mentor data
   const { data: mentorData, isLoading: mentorLoading } = useQuery({
     queryKey: ['mentor-data', user?.id],

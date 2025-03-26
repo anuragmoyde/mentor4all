@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -86,20 +85,19 @@ const Dashboard: React.FC = () => {
     }
   }, [sessionsData]);
 
+  // Redirect if not logged in or if user is a mentor
   useEffect(() => {
-    // Redirect if not logged in
-    if (!isLoading && !user) {
-      navigate('/auth');
-      return;
-    }
-
-    // Redirect based on user type
-    if (!isLoading && user && profile) {
-      if (profile.user_type === 'mentor') {
+    if (!isLoading) {
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+      
+      if (profile?.user_type === 'mentor') {
+        console.log('Redirecting to mentor dashboard, user type:', profile.user_type);
         navigate('/mentor-dashboard');
         return;
       }
-      // Stay on this page for mentees
     }
   }, [user, profile, isLoading, navigate]);
 
