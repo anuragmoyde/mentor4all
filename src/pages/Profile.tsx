@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -108,6 +109,13 @@ const Profile: React.FC = () => {
     navigate('/');
   };
 
+  // Helper function to get badge color based on user type
+  const getUserTypeColor = (userType?: string) => {
+    if (userType === 'mentor') return 'default';
+    if (userType === 'mentee') return 'secondary';
+    return 'outline';
+  };
+
   if (isLoading || !user) {
     return (
       <div className="container mx-auto py-16 flex justify-center">
@@ -119,14 +127,22 @@ const Profile: React.FC = () => {
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
+        <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">My Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your personal information
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-muted-foreground">
+              Manage your personal information
+            </p>
+            <Badge variant={getUserTypeColor(profile?.user_type)}>
+              {profile?.user_type === 'mentor' ? 'Mentor' : 'Mentee'}
+            </Badge>
+          </div>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(profile?.user_type === 'mentor' ? '/mentor-dashboard' : '/dashboard')}
+          >
             Back to Dashboard
           </Button>
           <Button variant="destructive" onClick={handleSignOut}>
@@ -181,6 +197,21 @@ const Profile: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Account Type Information */}
+            <div className="mb-6 p-4 bg-muted rounded-md">
+              <h3 className="font-medium mb-2">Account Type</h3>
+              <div className="flex items-center gap-2">
+                <Badge variant={getUserTypeColor(profile?.user_type)} className="text-sm py-1">
+                  {profile?.user_type === 'mentor' ? 'Mentor' : 'Mentee'}
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.user_type === 'mentor' 
+                    ? 'You can offer mentorship sessions and receive bookings from mentees.' 
+                    : 'You can book sessions with mentors to help with your growth.'}
+                </p>
+              </div>
+            </div>
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
