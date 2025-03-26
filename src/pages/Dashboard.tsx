@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, DollarSign, Users } from 'lucide-react';
+import { Calendar, Clock, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { BadgeIndianRupee } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { user, profile, isLoading } = useAuth();
@@ -96,6 +97,7 @@ const Dashboard: React.FC = () => {
     if (!isLoading && user && profile) {
       if (profile.user_type === 'mentor') {
         navigate('/mentor-dashboard');
+        return;
       }
       // Stay on this page for mentees
     }
@@ -151,11 +153,11 @@ const Dashboard: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <BadgeIndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${pastSessions.reduce((total, session) => total + (session.price || 0), 0).toFixed(2)}
+              ₹{pastSessions.reduce((total, session) => total + (session.price || 0), 0).toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">Investment in your growth</p>
           </CardContent>
@@ -210,8 +212,8 @@ const Dashboard: React.FC = () => {
                         <span className="text-sm">{session.duration} minutes</span>
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">${session.price}</span>
+                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm">₹{session.price}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -250,8 +252,8 @@ const Dashboard: React.FC = () => {
                         <span className="text-sm">{session.duration} minutes</span>
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">${session.price}</span>
+                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm">₹{session.price}</span>
                       </div>
                     </div>
                   </CardContent>

@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, DollarSign, Users } from 'lucide-react';
+import { Calendar, Clock, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { BadgeIndianRupee } from 'lucide-react';
 
 const MentorDashboard = () => {
   const { user, profile, isLoading } = useAuth();
@@ -105,6 +106,7 @@ const MentorDashboard = () => {
     if (!isLoading && user && profile) {
       if (profile.user_type !== 'mentor') {
         navigate('/dashboard');
+        return;
       }
       // Stay on this page for mentors
     }
@@ -169,10 +171,10 @@ const MentorDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <BadgeIndianRupee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${formattedEarnings}</div>
+            <div className="text-2xl font-bold">₹{formattedEarnings}</div>
             <p className="text-xs text-muted-foreground">Earnings from sessions</p>
           </CardContent>
         </Card>
@@ -225,8 +227,8 @@ const MentorDashboard = () => {
                         <span className="text-sm">{session.duration} minutes</span>
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">${session.price}</span>
+                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm">₹{session.price}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -265,8 +267,8 @@ const MentorDashboard = () => {
                         <span className="text-sm">{session.duration} minutes</span>
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">${session.price}</span>
+                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="text-sm">₹{session.price}</span>
                       </div>
                     </div>
                   </CardContent>
