@@ -15,27 +15,27 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    content: "Mentor4All completely transformed my career trajectory. The personalized guidance I received from my mentor helped me land a role at my dream company within 3 months.",
-    author: "Sarah Johnson",
-    title: "UX Designer",
-    company: "Airbnb",
-    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
+    content: "The mentorship I received through this platform was instrumental in helping me raise our first round of funding. My mentor's strategic insights and network connections were exactly what our startup needed to scale.",
+    author: "Arjun Patel",
+    title: "Founder & CEO",
+    company: "GreenTech Innovations",
+    image: "https://images.unsplash.com/photo-1623605931891-d5b95ee98459?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
   },
   {
     id: 2,
-    content: "The group sessions were incredibly valuable. Learning alongside peers while being guided by industry experts gave me both technical skills and important networking opportunities.",
-    author: "David Chen",
-    title: "Software Engineer",
-    company: "Microsoft",
-    image: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
+    content: "As someone transitioning from corporate to social impact, the expert guidance I received helped me navigate challenges specific to the non-profit sector. The group sessions provided valuable networking with like-minded changemakers.",
+    author: "Priya Sharma",
+    title: "Founder",
+    company: "EduReach Foundation",
+    image: "https://images.unsplash.com/photo-1598641795816-a84ac9eac40c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
   },
   {
     id: 3,
-    content: "As someone transitioning into tech from a non-traditional background, the mentorship I received was invaluable. My mentor provided practical advice that no bootcamp or course could offer.",
-    author: "Maya Patel",
-    title: "Data Analyst",
-    company: "Spotify",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
+    content: "The legal consulting mentorship helped me understand complex regulatory requirements for my fintech startup. This guidance saved us months of potential delays and helped us construct a robust compliance framework.",
+    author: "Vikram Malhotra",
+    title: "Co-founder",
+    company: "PaySmart Solutions",
+    image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
   },
 ];
 
@@ -56,7 +56,7 @@ const TestimonialSection: React.FC = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold">Success Stories</h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Hear from professionals who have accelerated their careers through our mentorship platform.
+            Hear from entrepreneurs and leaders who have accelerated their growth through our expert mentorship.
           </p>
         </div>
         

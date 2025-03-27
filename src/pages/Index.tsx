@@ -5,91 +5,110 @@ import MentorCard from '../components/MentorCard';
 import SessionCard from '../components/SessionCard';
 import TestimonialSection from '../components/TestimonialSection';
 import Button from '../components/Button';
-import { ArrowRight, Award, Globe, Lightbulb, Users } from 'lucide-react';
+import { ArrowRight, Briefcase, GraduationCap, Globe, Lightbulb, Users, Heart } from 'lucide-react';
 
-// Sample data
+// Updated sample data with Indian names
 const featuredMentors = [
   {
     id: '1',
-    name: 'Jennifer Lee',
-    title: 'Senior Product Manager',
-    company: 'Google',
-    expertise: ['Product Strategy', 'UX', 'Team Leadership'],
+    name: 'Neha Mehta',
+    title: 'Serial Entrepreneur',
+    company: 'TechVentures India',
+    expertise: ['Business Strategy', 'Startup Scaling', 'Funding'],
     rating: 4.9,
     reviewCount: 127,
-    hourlyRate: 120,
+    hourlyRate: 2000,
     availability: 'Next available: Tomorrow',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+    image: 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
   },
   {
     id: '2',
-    name: 'Michael Chen',
-    title: 'Engineering Manager',
-    company: 'Meta',
-    expertise: ['Software Architecture', 'Career Growth', 'Leadership'],
+    name: 'Rajiv Khanna',
+    title: 'Legal Advisor',
+    company: 'LegalEdge Consultants',
+    expertise: ['Startup Law', 'IP Rights', 'Compliance'],
     rating: 4.8,
     reviewCount: 94,
-    hourlyRate: 110,
+    hourlyRate: 1800,
     availability: 'Next available: Today',
-    image: 'https://images.unsplash.com/photo-1600486913747-55e5470d6f40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+    image: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
   },
   {
     id: '3',
-    name: 'Sarah Johnson',
-    title: 'Marketing Director',
-    company: 'Spotify',
-    expertise: ['Brand Strategy', 'Digital Marketing', 'Analytics'],
+    name: 'Ananya Desai',
+    title: 'Impact Investor',
+    company: 'Samridhi Ventures',
+    expertise: ['Social Enterprise', 'Impact Measurement', 'Funding'],
     rating: 4.7,
     reviewCount: 86,
-    hourlyRate: 100,
+    hourlyRate: 1500,
     availability: 'Next available: Thursday',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+    image: 'https://images.unsplash.com/photo-1598641795816-a84ac9eac40c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
   }
 ];
 
 const featuredSessions = [
   {
     id: '1',
-    title: 'Mastering Design Systems for Product Designers',
+    title: 'Building a Scalable Startup: From Idea to Series A',
     mentor: {
-      name: 'Alex Rivera',
-      image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+      name: 'Vivek Sharma',
+      image: 'https://images.unsplash.com/photo-1623605931891-d5b95ee98459?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
     },
-    date: 'June 15, 2023 - 10:00 AM PST',
+    date: 'June 15, 2023 - 10:00 AM IST',
     duration: '2 hours',
     capacity: 30,
     enrolled: 21,
-    price: 49,
-    category: 'Design'
+    price: 999,
+    category: 'Entrepreneurship'
   },
   {
     id: '2',
-    title: 'Leadership Skills for New Engineering Managers',
+    title: 'Leadership Skills for New-Age Business Leaders',
     mentor: {
-      name: 'Sophie Lin',
-      image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+      name: 'Sunita Reddy',
+      image: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
     },
-    date: 'June 20, 2023 - 1:00 PM PST',
+    date: 'June 20, 2023 - 1:00 PM IST',
     duration: '3 hours',
     capacity: 25,
     enrolled: 18,
-    price: 79,
+    price: 1499,
     category: 'Leadership'
   },
   {
     id: '3',
-    title: 'Data Analysis with Python for Beginners',
+    title: 'Building Sustainable Social Enterprises',
     mentor: {
-      name: 'Marcus Johnson',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
+      name: 'Karan Verma',
+      image: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'
     },
-    date: 'June 25, 2023 - 9:00 AM PST',
+    date: 'June 25, 2023 - 9:00 AM IST',
     duration: '4 hours',
     capacity: 40,
     enrolled: 32,
-    price: 59,
-    category: 'Data Science'
+    price: 1299,
+    category: 'Social Impact'
   }
+];
+
+// Mentor categories with icons and descriptions
+const mentorCategories = [
+  {
+    title: "Business & Entrepreneurship",
+    description: "Connect with founders and business leaders to build and scale your venture",
+    icon: <Briefcase className="w-10 h-10 text-primary" />,
+  },
+  {
+    title: "Career Growth & Professional Development",
+    description: "Accelerate your professional journey with tailored guidance from industry experts",
+    icon: <GraduationCap className="w-10 h-10 text-primary" />,
+  },
+  {
+    title: "Social Impact & Non-Profit",
+    description: "Create meaningful change with guidance from experienced social entrepreneurs",
+    icon: <Heart className="w-10 h-10 text-primary" />,
+  },
 ];
 
 const Index: React.FC = () => {
@@ -97,14 +116,41 @@ const Index: React.FC = () => {
     <div className="min-h-screen">
       <Hero />
       
+      {/* Mentor Categories Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold">Find Expert Guidance In</h2>
+            <p className="mt-2 text-lg text-muted-foreground max-w-2xl mx-auto">
+              Connect with mentors specialized in these key areas to help you achieve your goals
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {mentorCategories.map((category, index) => (
+              <div key={index} className="bg-gray-50 p-8 rounded-xl text-center hover:shadow-md transition-shadow">
+                <div className="mx-auto bg-primary/10 w-20 h-20 flex items-center justify-center rounded-full mb-4">
+                  {category.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3">{category.title}</h3>
+                <p className="text-muted-foreground mb-6">{category.description}</p>
+                <Button to="/mentors" variant="ghost" className="text-primary">
+                  Find a mentor <ArrowRight size={16} className="ml-2" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
       {/* Featured Mentors Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
             <div>
-              <h2 className="text-3xl font-bold">Top-Rated Mentors</h2>
+              <h2 className="text-3xl font-bold">Top-Rated Experts</h2>
               <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                Connect with industry-leading experts for personalized guidance.
+                Connect with industry-leading mentors for personalized guidance.
               </p>
             </div>
             <Button to="/mentors" variant="ghost" className="mt-4 md:mt-0">
@@ -124,9 +170,9 @@ const Index: React.FC = () => {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">How Mentor4All Works</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">How It Works</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Our platform makes it simple to connect with the right mentor and accelerate your professional growth.
+              Our platform makes it simple to connect with the right expert and accelerate your growth.
             </p>
           </div>
           
@@ -134,23 +180,23 @@ const Index: React.FC = () => {
             {[
               {
                 icon: <Users className="w-10 h-10 text-primary" />,
-                title: "Find Your Mentor",
-                description: "Browse our curated network of industry experts based on your goals and interests."
+                title: "Find Your Expert",
+                description: "Browse our curated network of industry leaders across business, social impact, legal, and career growth."
               },
               {
                 icon: <Globe className="w-10 h-10 text-primary" />,
                 title: "Book a Session",
-                description: "Schedule a one-on-one session at a time that works for your calendar."
+                description: "Schedule a one-on-one mentorship or join a group session at your convenience."
               },
               {
                 icon: <Lightbulb className="w-10 h-10 text-primary" />,
-                title: "Get Expert Guidance",
-                description: "Meet virtually to receive personalized advice and actionable feedback."
+                title: "Learn & Implement",
+                description: "Gain strategic insights and practical advice to apply to your business or career."
               },
               {
-                icon: <Award className="w-10 h-10 text-primary" />,
-                title: "Accelerate Your Growth",
-                description: "Apply your learnings and track your progress towards your goals."
+                icon: <Briefcase className="w-10 h-10 text-primary" />,
+                title: "Scale & Grow",
+                description: "Apply expert guidance to scale your venture or advance your professional journey."
               }
             ].map((step, index) => (
               <div key={index} className="text-center p-6 rounded-xl hover:bg-gray-50 transition-colors">
@@ -194,9 +240,9 @@ const Index: React.FC = () => {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Accelerate Your Career?</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Journey?</h2>
           <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
-            Join thousands of professionals who are advancing their careers through expert mentorship.
+            Join thousands of entrepreneurs and professionals building their future through expert mentorship.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button 

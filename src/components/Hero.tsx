@@ -32,20 +32,20 @@ const Hero: React.FC = () => {
       
       <div className="container relative z-10 px-4 py-16 mx-auto text-center">
         <span className="inline-block px-3 py-1.5 mb-6 text-xs font-medium tracking-wider text-primary bg-primary/10 rounded-full">
-          Transform Your Career with Expert Guidance
+          Empowering Entrepreneurs, Leaders & Changemakers
         </span>
         
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 mx-auto max-w-4xl">
-          Connect with Industry Experts for <span className="text-primary">Personalized Mentorship</span>
+          Build, Lead, and Scale with <span className="text-primary">Expert Mentorship</span>
         </h1>
         
         <p className="text-lg md:text-xl text-muted-foreground mb-8 mx-auto max-w-2xl">
-          Book one-on-one mentorship sessions or join group upskilling programs led by top professionals in your field.
+          Connect with industry pioneers for personalized guidance on business growth, professional development, and social impact initiatives.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button to="/mentors" variant="primary" size="lg" className="w-full sm:w-auto">
-            Explore Mentors
+            Find an Expert
           </Button>
           <Button to="/group-sessions" variant="outline" size="lg" className="w-full sm:w-auto">
             Browse Group Sessions
