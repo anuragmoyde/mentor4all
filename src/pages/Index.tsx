@@ -116,58 +116,8 @@ const Index: React.FC = () => {
     <div className="min-h-screen">
       <Hero />
       
-      {/* Mentor Categories Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold">Find Expert Guidance In</h2>
-            <p className="mt-2 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Connect with mentors specialized in these key areas to help you achieve your goals
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {mentorCategories.map((category, index) => (
-              <div key={index} className="bg-gray-50 p-8 rounded-xl text-center hover:shadow-md transition-shadow">
-                <div className="mx-auto bg-primary/10 w-20 h-20 flex items-center justify-center rounded-full mb-4">
-                  {category.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{category.title}</h3>
-                <p className="text-muted-foreground mb-6">{category.description}</p>
-                <Button to="/mentors" variant="ghost" className="text-primary">
-                  Find a mentor <ArrowRight size={16} className="ml-2" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Featured Mentors Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-            <div>
-              <h2 className="text-3xl font-bold">Top-Rated Experts</h2>
-              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                Connect with industry-leading mentors for personalized guidance.
-              </p>
-            </div>
-            <Button to="/mentors" variant="ghost" className="mt-4 md:mt-0">
-              View all mentors <ArrowRight size={16} className="ml-2" />
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredMentors.map((mentor) => (
-              <MentorCard key={mentor.id} mentor={mentor} />
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* How It Works Section */}
-      <section className="py-16 bg-white">
+      {/* How It Works Section - Moved up for better flow */}
+      <section className="py-16 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold">How It Works</h2>
@@ -199,7 +149,7 @@ const Index: React.FC = () => {
                 description: "Apply expert guidance to scale your venture or advance your professional journey."
               }
             ].map((step, index) => (
-              <div key={index} className="text-center p-6 rounded-xl hover:bg-gray-50 transition-colors">
+              <div key={index} className="text-center p-6 rounded-xl hover:bg-white transition-colors hover:shadow-md">
                 <div className="mx-auto bg-primary/10 w-16 h-16 flex items-center justify-center rounded-full mb-4">
                   {step.icon}
                 </div>
@@ -211,8 +161,63 @@ const Index: React.FC = () => {
         </div>
       </section>
       
+      {/* Mentor Categories Section - Enhanced design */}
+      <section className="py-16 bg-gradient-to-b from-gray-50 to-blue-50">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12">
+            <div>
+              <h2 className="text-3xl font-bold">Find Expert Guidance In</h2>
+              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
+                Connect with mentors specialized in these key areas to help you achieve your goals
+              </p>
+            </div>
+            <Button to="/mentors" variant="outline" className="mt-4 md:mt-0 group">
+              View all categories <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {mentorCategories.map((category, index) => (
+              <div key={index} className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100 hover:shadow-md transition-all transform hover:-translate-y-1">
+                <div className="mx-auto bg-primary/10 w-20 h-20 flex items-center justify-center rounded-full mb-4">
+                  {category.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3">{category.title}</h3>
+                <p className="text-muted-foreground mb-6">{category.description}</p>
+                <Button to="/mentors" variant="ghost" className="text-primary group">
+                  Find a mentor <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Featured Mentors Section */}
+      <section className="py-16 bg-gradient-to-b from-blue-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
+            <div>
+              <h2 className="text-3xl font-bold">Top-Rated Experts</h2>
+              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
+                Connect with industry-leading mentors for personalized guidance.
+              </p>
+            </div>
+            <Button to="/mentors" variant="ghost" className="mt-4 md:mt-0 group">
+              Explore all mentors <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredMentors.map((mentor) => (
+              <MentorCard key={mentor.id} mentor={mentor} />
+            ))}
+          </div>
+        </div>
+      </section>
+      
       {/* Featured Sessions Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
             <div>
@@ -221,8 +226,8 @@ const Index: React.FC = () => {
                 Join interactive workshops led by industry experts to level up your skills.
               </p>
             </div>
-            <Button to="/group-sessions" variant="ghost" className="mt-4 md:mt-0">
-              View all sessions <ArrowRight size={16} className="ml-2" />
+            <Button to="/group-sessions" variant="ghost" className="mt-4 md:mt-0 group">
+              View all sessions <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
           
@@ -238,7 +243,7 @@ const Index: React.FC = () => {
       <TestimonialSection />
       
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-white">
+      <section className="py-20 bg-gradient-to-br from-primary to-primary-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Journey?</h2>
           <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
@@ -249,7 +254,7 @@ const Index: React.FC = () => {
               to="/mentors" 
               className="bg-white text-primary hover:bg-gray-100 px-8 py-3 text-base"
             >
-              Find a Mentor
+              Explore Mentors
             </Button>
             <Button 
               to="/group-sessions" 

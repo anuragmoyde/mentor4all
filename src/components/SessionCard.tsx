@@ -37,7 +37,7 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, className }) => {
         <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
           {session.category}
         </span>
-        <div className="text-lg font-semibold">${session.price}</div>
+        <div className="text-lg font-semibold">₹{session.price}</div>
       </div>
       
       <h3 className="mt-3 text-lg font-semibold leading-tight group-hover:text-primary transition-colors">

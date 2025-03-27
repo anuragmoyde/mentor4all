@@ -79,7 +79,7 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, className }) => {
             <Clock size={16} className="mr-1" />
             <span>{mentor.availability}</span>
           </div>
-          <div className="text-base font-semibold">${mentor.hourlyRate}/hour</div>
+          <div className="text-base font-semibold">₹{mentor.hourlyRate}/hour</div>
         </div>
         
         <div className="flex gap-3">

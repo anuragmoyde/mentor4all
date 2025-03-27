@@ -36,18 +36,18 @@ const Hero: React.FC = () => {
         </span>
         
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 mx-auto max-w-4xl">
-          Build, Lead, and Scale with <span className="text-primary">Expert Mentorship</span>
+          Connect with Industry Experts for <span className="text-primary">Personalized Mentorship</span>
         </h1>
         
         <p className="text-lg md:text-xl text-muted-foreground mb-8 mx-auto max-w-2xl">
-          Connect with industry pioneers for personalized guidance on business growth, professional development, and social impact initiatives.
+          Book one-on-one mentorship sessions or join group upskilling programs led by top professionals in your field.
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button to="/mentors" variant="primary" size="lg" className="w-full sm:w-auto">
-            Find an Expert
+            Explore Mentors
           </Button>
-          <Button to="/group-sessions" variant="outline" size="lg" className="w-full sm:w-auto">
+          <Button to="/group-sessions" variant="outline" size="lg" className="w-full sm:w-auto bg-white/70 hover:bg-white">
             Browse Group Sessions
           </Button>
         </div>
