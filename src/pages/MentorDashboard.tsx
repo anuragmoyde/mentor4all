@@ -1,12 +1,15 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Clock, Users, BadgeIndianRupee } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+// Import Reusable Components
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import StatCards from '@/components/dashboard/StatCards';
+import SessionsTabs from '@/components/dashboard/SessionsTabs';
+import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 
 const MentorDashboard = () => {
   const { user, profile, isLoading } = useAuth();
@@ -103,28 +106,6 @@ const MentorDashboard = () => {
     },
     enabled: !!user && profile?.user_type === 'mentor',
   });
-  
-  // Fix for type error: Convert number to string for toFixed
-  const totalEarnings = sessionsData?.past?.reduce((total, session) => 
-    total + (session.price || 0), 0) || 0;
-  const formattedEarnings = totalEarnings.toFixed(2);
-  
-  useEffect(() => {
-    // Redirect if not logged in
-    if (!isLoading && !user) {
-      navigate('/auth');
-      return;
-    }
-
-    // Redirect based on user type
-    if (!isLoading && user && profile) {
-      if (profile.user_type !== 'mentor') {
-        navigate('/dashboard');
-        return;
-      }
-      // Stay on this page for mentors
-    }
-  }, [user, profile, isLoading, navigate]);
 
   if (isLoading || !user || !profile) {
     return (
@@ -137,161 +118,66 @@ const MentorDashboard = () => {
   const upcomingSessions = sessionsData?.upcoming || [];
   const pastSessions = sessionsData?.past || [];
   const dashboardLoading = mentorLoading || sessionsLoading;
+  
+  // Fix for type error: Convert number to string for toFixed
+  const totalEarnings = pastSessions.reduce((total, session) => 
+    total + (session.price || 0), 0) || 0;
+  const formattedEarnings = totalEarnings.toFixed(2);
+
+  // Prepare stats for the StatCards component
+  const stats = [
+    {
+      title: "Upcoming Sessions",
+      value: upcomingSessions.length,
+      description: upcomingSessions.length === 0 
+        ? 'No upcoming sessions' 
+        : upcomingSessions.length === 1 
+          ? '1 session scheduled' 
+          : `${upcomingSessions.length} sessions scheduled`,
+      icon: 'calendar'
+    },
+    {
+      title: "Session Hours",
+      value: pastSessions.reduce((total, session) => total + (session.duration || 0), 0) / 60,
+      description: "Total hours spent mentoring",
+      icon: 'clock'
+    },
+    {
+      title: "Total Earnings",
+      value: `₹${formattedEarnings}`,
+      description: "Earnings from sessions",
+      icon: 'money'
+    },
+    {
+      title: "Mentees",
+      value: new Set(pastSessions.map(session => session.mentee_id)).size,
+      description: "Unique mentees helped",
+      icon: 'users'
+    }
+  ];
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Mentor Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {profile?.first_name || 'Mentor'}!
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button onClick={() => navigate('/profile')}>
-            Edit Profile
-          </Button>
-          <Button variant="outline" onClick={() => {}}>
-            Set Availability
-          </Button>
-        </div>
-      </div>
+      <DashboardHeader 
+        title="Mentor Dashboard" 
+        subtitle="Welcome back,"
+        userFirstName={profile?.first_name}
+        showAvailabilityButton={true}
+      />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Sessions</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{upcomingSessions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {upcomingSessions.length === 0 ? 'No upcoming sessions' : upcomingSessions.length === 1 ? '1 session scheduled' : `${upcomingSessions.length} sessions scheduled`}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Session Hours</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {pastSessions.reduce((total, session) => total + (session.duration || 0), 0) / 60}
-            </div>
-            <p className="text-xs text-muted-foreground">Total hours spent mentoring</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <BadgeIndianRupee className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{formattedEarnings}</div>
-            <p className="text-xs text-muted-foreground">Earnings from sessions</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mentees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set(pastSessions.map(session => session.mentee_id)).size}
-            </div>
-            <p className="text-xs text-muted-foreground">Unique mentees helped</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="upcoming" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="upcoming">Upcoming Sessions</TabsTrigger>
-          <TabsTrigger value="past">Session History</TabsTrigger>
-        </TabsList>
-        <TabsContent value="upcoming" className="space-y-4">
-          {dashboardLoading ? (
-            <div className="text-center py-8 animate-pulse">Loading sessions...</div>
-          ) : upcomingSessions.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">You don't have any upcoming sessions.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingSessions.map((session) => (
-                <Card key={session.id}>
-                  <CardHeader>
-                    <CardTitle>{session.title}</CardTitle>
-                    <CardDescription>
-                      with {session.profiles?.first_name} {session.profiles?.last_name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">
-                          {new Date(session.date_time).toLocaleDateString()} at {new Date(session.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">{session.duration} minutes</span>
-                      </div>
-                      <div className="flex items-center">
-                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">₹{session.price}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-        <TabsContent value="past" className="space-y-4">
-          {dashboardLoading ? (
-            <div className="text-center py-8 animate-pulse">Loading sessions...</div>
-          ) : pastSessions.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">You don't have any past sessions yet.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {pastSessions.map((session) => (
-                <Card key={session.id}>
-                  <CardHeader>
-                    <CardTitle>{session.title}</CardTitle>
-                    <CardDescription>
-                      with {session.profiles?.first_name} {session.profiles?.last_name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">
-                          {new Date(session.date_time).toLocaleDateString()} at {new Date(session.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">{session.duration} minutes</span>
-                      </div>
-                      <div className="flex items-center">
-                        <BadgeIndianRupee className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-sm">₹{session.price}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+      {dashboardLoading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          <StatCards stats={stats} />
+          <SessionsTabs 
+            upcomingSessions={upcomingSessions} 
+            pastSessions={pastSessions} 
+            isLoading={false} 
+            isMentor={true}
+          />
+        </>
+      )}
     </div>
   );
 };
