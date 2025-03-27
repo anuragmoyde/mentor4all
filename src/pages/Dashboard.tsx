@@ -9,7 +9,7 @@ import { toast } from '@/hooks/use-toast';
 
 // Import Reusable Components
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatCards from '@/components/dashboard/StatCards';
+import StatCards, { StatCardProps } from '@/components/dashboard/StatCards';
 import SessionsTabs from '@/components/dashboard/SessionsTabs';
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 
@@ -151,7 +151,7 @@ const Dashboard: React.FC = () => {
   }
 
   // Prepare stats for the StatCards component
-  const stats = [
+  const stats: StatCardProps[] = [
     {
       title: "Upcoming Sessions",
       value: upcomingSessions.length,

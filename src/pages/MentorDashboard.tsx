@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Import Reusable Components
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import StatCards from '@/components/dashboard/StatCards';
+import StatCards, { StatCardProps } from '@/components/dashboard/StatCards';
 import SessionsTabs from '@/components/dashboard/SessionsTabs';
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 
@@ -125,7 +125,7 @@ const MentorDashboard = () => {
   const formattedEarnings = totalEarnings.toFixed(2);
 
   // Prepare stats for the StatCards component
-  const stats = [
+  const stats: StatCardProps[] = [
     {
       title: "Upcoming Sessions",
       value: upcomingSessions.length,
