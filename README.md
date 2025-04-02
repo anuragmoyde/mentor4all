@@ -1,69 +1,127 @@
-# Welcome to your Lovable project
+# Mentorship Platform
 
-## Project info
+## Overview
+The Mentorship Platform is a web-based application designed to connect users with experienced mentors across various domains, including Business & Entrepreneurship, Career Growth & Professional Development, Social Impact & Non-Profit, and Legal Consulting. The platform facilitates both one-on-one mentorship and group sessions to provide accessible guidance and networking opportunities.
 
-**URL**: https://lovable.dev/projects/ff883e8a-6d11-41be-8f90-7411ffdf5cd3
+## Tech Stack
+This project is built using the following modern technologies:
 
-## How can I edit this code?
+- **Vite** – Fast and optimized build tool for frontend development
+- **TypeScript** – Ensures type safety and better developer experience
+- **React** – Component-based UI development
+- **shadcn-ui** – Pre-built UI components for streamlined development
+- **Tailwind CSS** – Utility-first CSS framework for modern styling
 
-There are several ways of editing your application.
+## Features
+- **User Authentication** – Secure login and registration
+- **Mentor Directory** – Explore mentors across various categories
+- **One-on-One Mentorship** – Direct booking of personalized mentorship sessions
+- **Group Sessions** – Participate in expert-led discussions
+- **User Dashboard** – Personalized dashboard with session tracking
+- **Admin & Mentor Dashboard** – Manage bookings, schedules, and user engagement
+- **Responsive UI** – Seamless experience across devices
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/ff883e8a-6d11-41be-8f90-7411ffdf5cd3) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## Project Structure
+```
+public/
+├── favicon.ico
+├── placeholder.svg
+├── robots.txt
+src/
+├── components/
+│   ├── dashboard/
+│   │   ├── DashboardHeader.tsx
+│   │   ├── DashboardSkeleton.tsx
+│   │   ├── SessionCard.tsx
+│   │   ├── SessionsTab.tsx
+│   │   ├── SessionsTabs.tsx
+│   │   ├── StatCards.tsx
+│   ├── profile/
+│   │   ├── AccountTypeSection.tsx
+│   │   ├── ProfileHeader.tsx
+│   │   ├── ProfilePictureCard.tsx
+│   ├── ui/  # Shadcn UI components
+│   ├── Button.tsx
+│   ├── FilterBar.tsx
+│   ├── Footer.tsx
+│   ├── Hero.tsx
+│   ├── MentorCard.tsx
+│   ├── Navbar.tsx
+│   ├── SessionCard.tsx
+│   ├── TestimonialSection.tsx
+├── contexts/
+├── hooks/
+├── integrations/
+│   ├── supabase/
+├── lib/
+├── pages/
+│   ├── Auth.tsx
+│   ├── Dashboard.tsx
+│   ├── GroupSessions.tsx
+│   ├── Index.tsx
+│   ├── MentorDashboard.tsx
+│   ├── MentorDirectory.tsx
+│   ├── NotFound.tsx
+│   ├── Profile.tsx
+├── App.tsx
+├── main.tsx
+├── vite-env.d.ts
+supabase/
+├── functions/send-session-reminder/
+│   ├── config.toml
+.gitignore
+README.md
+package.json
+vite.config.ts
 ```
 
-**Edit a file directly in GitHub**
+## Installation & Setup
+### Prerequisites
+Ensure you have the following installed:
+- Node.js (v18+ recommended)
+- npm or bun
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Steps to Run the Project
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/your-repo/mentorship-platform.git
+   cd mentorship-platform
+   ```
+2. Install dependencies:
+   ```sh
+   npm install  # or bun install
+   ```
+3. Start the development server:
+   ```sh
+   npm run dev  # or bun dev
+   ```
+4. Open the application in your browser at:
+   ```
+   http://localhost:5173
+   ```
 
-**Use GitHub Codespaces**
+## Configuration
+### Environment Variables
+Create a `.env` file in the root directory and configure the following variables:
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Contribution Guidelines
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature-branch`
+3. Make your changes and commit them: `git commit -m "Add new feature"`
+4. Push to your fork: `git push origin feature-branch`
+5. Open a pull request.
 
-## What technologies are used for this project?
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.
 
-This project is built with .
+## Contact
+For queries or contributions, reach out to [Your Email] or open an issue on GitHub.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+This README provides a professional, structured, and highly detailed overview of your mentorship platform.
 
-Simply open [Lovable](https://lovable.dev/projects/ff883e8a-6d11-41be-8f90-7411ffdf5cd3) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
