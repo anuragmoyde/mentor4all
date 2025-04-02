@@ -119,9 +119,6 @@ VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Contact
-For queries or contributions, reach out to [Your Email] or open an issue on GitHub.
+For queries or contributions, reach out to anuragmoyde@gmail.com or open an issue on GitHub.
 
 ---
-
-This README provides a professional, structured, and highly detailed overview of your mentorship platform.
-
