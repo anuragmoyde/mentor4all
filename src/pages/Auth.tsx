@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -36,20 +35,63 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Auth: React.FC = () => {
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, profile, updateProfile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [authError, setAuthError] = useState<string | null>(null);
   const [showRoleSelection, setShowRoleSelection] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'mentor' | 'mentee'>('mentee');
+  const [processingOAuth, setProcessingOAuth] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
+    const userTypeParam = searchParams.get('user_type');
+    
+    const checkRedirectState = async () => {
+      if (user && !authLoading && (!profile?.user_type || profile.user_type === 'mentee') && userTypeParam === 'mentor') {
+        setProcessingOAuth(true);
+        try {
+          console.log('Updating user type to mentor after OAuth redirect');
+          await updateProfile({
+            user_type: 'mentor'
+          });
+          
+          const { error } = await fetch('/api/create-mentor-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId: user.id }),
+          }).then(res => res.json());
+          
+          if (error) {
+            console.error('Error creating mentor profile:', error);
+          }
+          
+          navigate('/mentor-dashboard');
+        } catch (err) {
+          console.error('Error setting user type after OAuth:', err);
+        } finally {
+          setProcessingOAuth(false);
+        }
+      }
+    };
+    
+    if (userTypeParam && user && !authLoading) {
+      checkRedirectState();
     }
-  }, [user, navigate]);
+  }, [user, profile, searchParams, navigate, updateProfile, authLoading]);
+
+  useEffect(() => {
+    if (user && profile && !processingOAuth) {
+      if (profile.user_type === 'mentor') {
+        navigate('/mentor-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [user, profile, navigate, processingOAuth]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -120,7 +162,17 @@ const Auth: React.FC = () => {
     }
   };
 
-  // Show role selection modal
+  if (authLoading || processingOAuth) {
+    return (
+      <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-lg font-medium">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (showRoleSelection) {
     return (
       <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-200px)]">

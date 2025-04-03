@@ -34,23 +34,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.id);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         
-        if (session?.user) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error('Error fetching profile:', error);
-          } else {
-            setProfile(data as Profile);
+        if (currentSession?.user) {
+          try {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .single();
+              
+            if (error) {
+              console.error('Error fetching profile:', error);
+              setProfile(null);
+            } else {
+              console.log('Profile loaded:', data);
+              setProfile(data as Profile);
+            }
+          } catch (err) {
+            console.error('Exception fetching profile:', err);
+            setProfile(null);
           }
         } else {
           setProfile(null);
@@ -60,29 +68,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data, error }) => {
+    // Then check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Initial session check:', currentSession?.user?.id);
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          try {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .single();
+              
             if (error) {
-              console.error('Error fetching profile:', error);
+              console.error('Error fetching profile on init:', error);
+              setProfile(null);
             } else {
+              console.log('Initial profile loaded:', data);
               setProfile(data as Profile);
             }
-            setIsLoading(false);
-          });
-      } else {
+          } catch (err) {
+            console.error('Exception fetching profile on init:', err);
+            setProfile(null);
+          }
+        }
+      } catch (err) {
+        console.error('Error getting session:', err);
+      } finally {
         setIsLoading(false);
       }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       subscription.unsubscribe();
@@ -97,32 +119,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: result.error.message,
         variant: "destructive"
       });
+    } else {
+      toast({
+        title: "Signed in successfully",
+        description: "Welcome back!",
+      });
     }
     return { error: result.error };
   };
 
   const signInWithGoogle = async (userType: 'mentor' | 'mentee') => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-        queryParams: {
-          // Pass the user type as a custom parameter
-          user_type: userType,
-        },
+    try {
+      // Store the user type preference in localStorage so we can access it after redirect
+      localStorage.setItem('preferred_user_type', userType);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth?user_type=${userType}`,
+          queryParams: {
+            // Pass the user type as a custom parameter
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Google sign in failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
       }
-    });
-    
-    if (error) {
+    } catch (error) {
+      console.error('Google sign in error:', error);
       toast({
         title: "Google sign in failed",
-        description: error.message,
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
-      throw error;
     }
-    
-    // The user will be redirected to Google for authentication
   };
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, userType: 'mentor' | 'mentee' = 'mentee') => {
@@ -175,11 +213,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Signed out",
-      description: "You have been signed out successfully.",
-    });
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        toast({
+          title: "Sign out failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        // Clear all auth state explicitly
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        
+        toast({
+          title: "Signed out",
+          description: "You have been signed out successfully.",
+        });
+      }
+    } catch (err) {
+      console.error('Exception during sign out:', err);
+      toast({
+        title: "Sign out failed",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {

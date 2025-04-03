@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -19,7 +19,7 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isLoading } = useAuth();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -76,10 +76,10 @@ const Navbar: React.FC = () => {
           </ul>
           
           <div className="flex items-center space-x-4">
-            {user ? (
+            {!isLoading && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full overflow-hidden border-2 border-primary/10 hover:border-primary/30 transition-all">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.first_name || ""} />
                       <AvatarFallback className="bg-primary/10 text-primary">
@@ -88,7 +88,7 @@ const Navbar: React.FC = () => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-0.5 leading-none">
                       <p className="font-medium text-sm">{profile?.first_name} {profile?.last_name}</p>
@@ -96,14 +96,17 @@ const Navbar: React.FC = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                  <DropdownMenuItem onClick={() => navigate(profile?.user_type === 'mentor' ? '/mentor-dashboard' : '/dashboard')} className="cursor-pointer">
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                    <Settings className="h-4 w-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
                     Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -146,16 +149,19 @@ const Navbar: React.FC = () => {
                 </li>
               ))}
               
-              {user && (
+              {!isLoading && user ? (
                 <>
                   <li>
                     <Link 
-                      to="/dashboard" 
+                      to={profile?.user_type === 'mentor' ? '/mentor-dashboard' : '/dashboard'}
                       className={cn(
-                        "block py-2 text-base font-medium transition-all",
-                        location.pathname === '/dashboard' ? "text-primary" : "text-foreground/80"
+                        "block py-2 text-base font-medium transition-all flex items-center",
+                        location.pathname === '/dashboard' || location.pathname === '/mentor-dashboard' 
+                          ? "text-primary" 
+                          : "text-foreground/80"
                       )}
                     >
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
                       Dashboard
                     </Link>
                   </li>
@@ -163,20 +169,26 @@ const Navbar: React.FC = () => {
                     <Link 
                       to="/profile" 
                       className={cn(
-                        "block py-2 text-base font-medium transition-all",
+                        "block py-2 text-base font-medium transition-all flex items-center",
                         location.pathname === '/profile' ? "text-primary" : "text-foreground/80"
                       )}
                     >
+                      <Settings className="h-4 w-4 mr-2" />
                       Profile
                     </Link>
                   </li>
                 </>
-              )}
+              ) : null}
             </ul>
             
             <div className="mt-6 flex flex-col space-y-4">
-              {user ? (
-                <Button variant="destructive" className="w-full justify-center" onClick={handleSignOut}>
+              {!isLoading && user ? (
+                <Button 
+                  variant="destructive" 
+                  className="w-full justify-center flex items-center gap-2" 
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
                   Sign Out
                 </Button>
               ) : (
