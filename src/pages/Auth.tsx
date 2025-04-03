@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useAuth } from '@/contexts/AuthContext';
+import { Separator } from '@/components/ui/separator';
+import { AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -34,10 +36,13 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Auth: React.FC = () => {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'mentor' | 'mentee'>('mentee');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -67,11 +72,12 @@ const Auth: React.FC = () => {
   });
 
   const onLoginSubmit = async (values: LoginFormValues) => {
+    setAuthError(null);
     setIsLoading(true);
     try {
       const { error } = await signIn(values.email, values.password);
-      if (!error) {
-        navigate('/dashboard');
+      if (error) {
+        setAuthError(error.message);
       }
     } finally {
       setIsLoading(false);
@@ -79,6 +85,7 @@ const Auth: React.FC = () => {
   };
 
   const onSignupSubmit = async (values: SignupFormValues) => {
+    setAuthError(null);
     setIsLoading(true);
     try {
       const { error } = await signUp(
@@ -88,13 +95,86 @@ const Auth: React.FC = () => {
         values.lastName,
         values.userType
       );
-      if (!error) {
-        navigate('/dashboard');
+      if (error) {
+        setAuthError(error.message);
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError(null);
+    setShowRoleSelection(true);
+  };
+
+  const handleRoleSelectionComplete = async () => {
+    setIsLoading(true);
+    try {
+      await signInWithGoogle(selectedRole);
+    } catch (error) {
+      setAuthError((error as Error).message);
+    } finally {
+      setIsLoading(false);
+      setShowRoleSelection(false);
+    }
+  };
+
+  // Show role selection modal
+  if (showRoleSelection) {
+    return (
+      <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-200px)]">
+        <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-md">
+          <div className="text-center">
+            <h1 className="text-xl font-bold">Choose Your Role</h1>
+            <p className="text-muted-foreground mt-2">
+              How would you like to join Mentor4All?
+            </p>
+          </div>
+          
+          <RadioGroup 
+            defaultValue={selectedRole} 
+            onValueChange={(value) => setSelectedRole(value as 'mentor' | 'mentee')}
+            className="space-y-4"
+          >
+            <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+              <RadioGroupItem value="mentee" id="mentee" />
+              <label htmlFor="mentee" className="flex-1 cursor-pointer">
+                <div className="font-medium">Join as a Mentee</div>
+                <div className="text-sm text-muted-foreground">I'm looking for guidance and expertise</div>
+              </label>
+            </div>
+            
+            <div className="flex items-center space-x-2 border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+              <RadioGroupItem value="mentor" id="mentor" />
+              <label htmlFor="mentor" className="flex-1 cursor-pointer">
+                <div className="font-medium">Join as a Mentor</div>
+                <div className="text-sm text-muted-foreground">I want to share my knowledge and expertise</div>
+              </label>
+            </div>
+          </RadioGroup>
+          
+          <div className="flex gap-4 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRoleSelection(false)} 
+              className="flex-1"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRoleSelectionComplete} 
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processing...' : 'Continue'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-200px)]">
@@ -105,6 +185,13 @@ const Auth: React.FC = () => {
             Connect with experienced mentors to grow your skills
           </p>
         </div>
+
+        {authError && (
+          <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-start space-x-2">
+            <AlertCircle size={18} className="mt-0.5" />
+            <p className="text-sm">{authError}</p>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="w-full">
           <TabsList className="grid grid-cols-2 w-full">
@@ -146,6 +233,31 @@ const Auth: React.FC = () => {
                 </Button>
               </form>
             </Form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-2" 
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.8452 8.18758C15.8452 7.52549 15.7891 6.97608 15.6656 6.4043H8.12422V9.35483H12.5312C12.4301 10.0983 11.9668 11.1816 10.9258 11.9077L10.9077 12.0192L13.2663 13.8332L13.4351 13.8496C14.9387 12.4724 15.8452 10.5181 15.8452 8.18758Z" fill="#4285F4" />
+                <path d="M8.12423 16C10.3106 16 12.1227 15.2839 13.4352 13.8496L10.9258 11.9077C10.2637 12.3585 9.34985 12.6692 8.12423 12.6692C5.99383 12.6692 4.20622 11.2919 3.56454 9.35794L3.46091 9.36615L0.995853 11.2526L0.961426 11.3529C2.26352 14.0754 4.96876 16 8.12423 16Z" fill="#34A853" />
+                <path d="M3.56448 9.35793C3.3961 8.78636 3.28871 8.17672 3.28871 7.53907C3.28871 6.90138 3.3961 6.29178 3.55826 5.72025L3.55241 5.60159L1.04804 3.67822L0.961367 3.72524C0.350282 4.85748 0 6.15592 0 7.53907C0 8.92222 0.350282 10.2207 0.961367 11.3529L3.56448 9.35793Z" fill="#FBBC05" />
+                <path d="M8.12423 2.40894C9.64644 2.40894 10.7031 2.95834 11.3072 3.52988L13.5481 1.36971C12.1165 0.0581971 10.3106 -0.109091 8.12423 0.0478153C4.96876 0.0478153 2.26352 1.97245 0.961426 4.69492L3.5583 6.72023C4.20626 4.78625 5.99383 2.40894 8.12423 2.40894Z" fill="#EB4335" />
+              </svg>
+              <span>Google</span>
+            </Button>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-6">
@@ -260,6 +372,31 @@ const Auth: React.FC = () => {
                 </Button>
               </form>
             </Form>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t"></span>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full flex items-center justify-center gap-2" 
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.8452 8.18758C15.8452 7.52549 15.7891 6.97608 15.6656 6.4043H8.12422V9.35483H12.5312C12.4301 10.0983 11.9668 11.1816 10.9258 11.9077L10.9077 12.0192L13.2663 13.8332L13.4351 13.8496C14.9387 12.4724 15.8452 10.5181 15.8452 8.18758Z" fill="#4285F4" />
+                <path d="M8.12423 16C10.3106 16 12.1227 15.2839 13.4352 13.8496L10.9258 11.9077C10.2637 12.3585 9.34985 12.6692 8.12423 12.6692C5.99383 12.6692 4.20622 11.2919 3.56454 9.35794L3.46091 9.36615L0.995853 11.2526L0.961426 11.3529C2.26352 14.0754 4.96876 16 8.12423 16Z" fill="#34A853" />
+                <path d="M3.56448 9.35793C3.3961 8.78636 3.28871 8.17672 3.28871 7.53907C3.28871 6.90138 3.3961 6.29178 3.55826 5.72025L3.55241 5.60159L1.04804 3.67822L0.961367 3.72524C0.350282 4.85748 0 6.15592 0 7.53907C0 8.92222 0.350282 10.2207 0.961367 11.3529L3.56448 9.35793Z" fill="#FBBC05" />
+                <path d="M8.12423 2.40894C9.64644 2.40894 10.7031 2.95834 11.3072 3.52988L13.5481 1.36971C12.1165 0.0581971 10.3106 -0.109091 8.12423 0.0478153C4.96876 0.0478153 2.26352 1.97245 0.961426 4.69492L3.5583 6.72023C4.20626 4.78625 5.99383 2.40894 8.12423 2.40894Z" fill="#EB4335" />
+              </svg>
+              <span>Google</span>
+            </Button>
           </TabsContent>
         </Tabs>
       </div>

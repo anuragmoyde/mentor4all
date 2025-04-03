@@ -72,6 +72,11 @@ const FilterBar: React.FC<FilterBarProps> = ({
     onFilterChange(filterName, []);
   };
   
+  // Format price labels to use rupee symbol
+  const formatPriceLabel = (label: string) => {
+    return label.replace(/\$/g, '₹');
+  };
+  
   return (
     <div className={cn("bg-white rounded-xl shadow-sm border border-gray-100 p-4", className)}>
       <div className="relative flex items-center border border-gray-200 rounded-lg p-2 mb-4">
@@ -151,7 +156,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
                         onChange={() => handleFilterSelect(name, option.value)}
                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                       />
-                      <span className="ml-2 text-sm">{option.label}</span>
+                      <span className="ml-2 text-sm">
+                        {name === 'price' ? formatPriceLabel(option.label) : option.label}
+                      </span>
                     </label>
                   ))}
                 </div>

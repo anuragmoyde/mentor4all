@@ -20,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, firstName: string, lastName: string, userType?: 'mentor' | 'mentee') => Promise<{ error: any, data: any }>;
+  signInWithGoogle: (userType: 'mentor' | 'mentee') => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: any }>;
 }
@@ -98,6 +99,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
     return { error: result.error };
+  };
+
+  const signInWithGoogle = async (userType: 'mentor' | 'mentee') => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          // Pass the user type as a custom parameter
+          user_type: userType,
+        },
+      }
+    });
+    
+    if (error) {
+      toast({
+        title: "Google sign in failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+    
+    // The user will be redirected to Google for authentication
   };
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, userType: 'mentor' | 'mentee' = 'mentee') => {
@@ -191,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     updateProfile,
   };
