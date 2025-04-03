@@ -104,34 +104,78 @@ export type Database = {
           },
         ]
       }
+      mentor_availability: {
+        Row: {
+          created_at: string
+          day: string
+          end_time: string
+          id: string
+          is_booked: boolean | null
+          mentor_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          end_time: string
+          id?: string
+          is_booked?: boolean | null
+          mentor_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          end_time?: string
+          id?: string
+          is_booked?: boolean | null
+          mentor_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_availability_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "mentors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentors: {
         Row: {
           availability: Json | null
           average_rating: number | null
+          company: string | null
           expertise: string[] | null
           hourly_rate: number
           id: string
           industry: string | null
+          job_title: string | null
           review_count: number | null
           years_experience: number | null
         }
         Insert: {
           availability?: Json | null
           average_rating?: number | null
+          company?: string | null
           expertise?: string[] | null
           hourly_rate: number
           id: string
           industry?: string | null
+          job_title?: string | null
           review_count?: number | null
           years_experience?: number | null
         }
         Update: {
           availability?: Json | null
           average_rating?: number | null
+          company?: string | null
           expertise?: string[] | null
           hourly_rate?: number
           id?: string
           industry?: string | null
+          job_title?: string | null
           review_count?: number | null
           years_experience?: number | null
         }

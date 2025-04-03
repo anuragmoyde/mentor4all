@@ -2,7 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from '@/hooks/use-toast';
 
 interface TimeSlotPickerProps {
   onAddTimeSlot: (startTime: string, endTime: string) => void;
@@ -31,19 +33,40 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ onAddTimeSlot })
   const handleAddSlot = () => {
     // Validate that end time is after start time
     if (startTime >= endTime) {
-      // You could show a toast message here
+      toast({
+        title: "Invalid time slot",
+        description: "End time must be after start time",
+        variant: "destructive"
+      });
       return;
     }
 
     onAddTimeSlot(startTime, endTime);
+    
+    // Auto-clear or suggest next slot
+    const startIndex = timeOptions.indexOf(endTime);
+    if (startIndex >= 0 && startIndex < timeOptions.length - 2) {
+      setStartTime(endTime);
+      setEndTime(timeOptions[startIndex + 2]);
+    }
   };
 
   return (
-    <div className="flex flex-col space-y-4 border rounded-md p-4 bg-slate-50/50">
+    <div className="flex flex-col space-y-4 border rounded-md p-4 bg-slate-50/50 shadow-sm hover:shadow-md transition-shadow">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="startTime" className="block text-xs font-medium text-gray-700 mb-1">
+          <label htmlFor="startTime" className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
             Start Time
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 ml-1 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Choose when your session starts</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
           <Select
             value={startTime}
@@ -70,8 +93,18 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ onAddTimeSlot })
         </div>
 
         <div>
-          <label htmlFor="endTime" className="block text-xs font-medium text-gray-700 mb-1">
+          <label htmlFor="endTime" className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
             End Time
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3 w-3 ml-1 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Choose when your session ends</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </label>
           <Select
             value={endTime}
@@ -93,9 +126,9 @@ export const TimeSlotPicker: React.FC<TimeSlotPickerProps> = ({ onAddTimeSlot })
 
       <Button 
         onClick={handleAddSlot} 
-        className="w-full"
+        className="w-full group hover:bg-green-600 transition-colors"
       >
-        <PlusCircle className="h-4 w-4 mr-2" />
+        <PlusCircle className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
         Add Time Slot
       </Button>
     </div>

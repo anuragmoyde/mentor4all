@@ -1,435 +1,463 @@
 
 import React, { useState, useEffect } from 'react';
-import FilterBar from '../components/FilterBar';
-import MentorCard from '../components/MentorCard';
-import { Grid, List, SlidersHorizontal } from 'lucide-react';
-import Button from '../components/Button';
-import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
+import { Card, CardContent } from '@/components/ui/card';
+import { Check, Search, X, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import MentorCard from '@/components/MentorCard';
+import MentorDetailView from '@/components/mentors/MentorDetailView';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-interface Mentor {
+interface MentorData {
   id: string;
-  name: string;
-  title: string;
-  company: string;
+  hourly_rate: number;
+  years_experience: number | null;
   expertise: string[];
-  rating: number;
-  reviewCount: number;
-  hourlyRate: number;
-  availability: string;
-  image: string;
-  industry: string;
-  experience: string;
-  availabilityCount?: number;
+  industry: string | null;
+  job_title: string | null;
+  company: string | null;
+  average_rating: number;
+  review_count: number;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+  };
 }
 
-// Sample data for mentors (fallback data if API fails)
-const sampleMentors = [
-  {
-    id: '1',
-    name: 'Jennifer Lee',
-    title: 'Senior Product Manager',
-    company: 'Google',
-    expertise: ['Product Strategy', 'UX', 'Team Leadership'],
-    rating: 4.9,
-    reviewCount: 127,
-    hourlyRate: 2000,
-    availability: 'Next available: Tomorrow',
-    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Technology',
-    experience: '10+ years'
-  },
-  {
-    id: '2',
-    name: 'Michael Chen',
-    title: 'Engineering Manager',
-    company: 'Meta',
-    expertise: ['Software Architecture', 'Career Growth', 'Leadership'],
-    rating: 4.8,
-    reviewCount: 94,
-    hourlyRate: 2200,
-    availability: 'Next available: Today',
-    image: 'https://images.unsplash.com/photo-1600486913747-55e5470d6f40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Technology',
-    experience: '10+ years'
-  },
-  {
-    id: '3',
-    name: 'Sarah Johnson',
-    title: 'Marketing Director',
-    company: 'Spotify',
-    expertise: ['Brand Strategy', 'Digital Marketing', 'Analytics'],
-    rating: 4.7,
-    reviewCount: 86,
-    hourlyRate: 1800,
-    availability: 'Next available: Thursday',
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Marketing',
-    experience: '5-10 years'
-  },
-  {
-    id: '4',
-    name: 'David Rodriguez',
-    title: 'CTO',
-    company: 'Startup Accelerator',
-    expertise: ['Scaling Teams', 'Technical Strategy', 'Startups'],
-    rating: 4.9,
-    reviewCount: 113,
-    hourlyRate: 2500,
-    availability: 'Next available: Friday',
-    image: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Technology',
-    experience: '10+ years'
-  },
-  {
-    id: '5',
-    name: 'Emma Wilson',
-    title: 'Senior UX Designer',
-    company: 'Airbnb',
-    expertise: ['UX Research', 'Design Systems', 'UI Design'],
-    rating: 4.8,
-    reviewCount: 79,
-    hourlyRate: 1900,
-    availability: 'Next available: Monday',
-    image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Design',
-    experience: '5-10 years'
-  },
-  {
-    id: '6',
-    name: 'James Taylor',
-    title: 'Finance Director',
-    company: 'JP Morgan',
-    expertise: ['Financial Planning', 'Investment', 'Career Transition'],
-    rating: 4.6,
-    reviewCount: 68,
-    hourlyRate: 2300,
-    availability: 'Next available: Wednesday',
-    image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-    industry: 'Finance',
-    experience: '10+ years'
-  },
-];
+const MentorDirectory = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [priceRange, setPriceRange] = useState([0, 5000]);
+  const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [availableExpertise, setAvailableExpertise] = useState<string[]>([]);
+  const [availableIndustries, setAvailableIndustries] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [selectedMentorId, setSelectedMentorId] = useState<string | null>(null);
 
-const MentorDirectory: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [filters, setFilters] = useState({
-    industry: {
-      label: 'Industry',
-      options: [
-        { label: 'Technology', value: 'Technology' },
-        { label: 'Marketing', value: 'Marketing' },
-        { label: 'Design', value: 'Design' },
-        { label: 'Finance', value: 'Finance' },
-        { label: 'Healthcare', value: 'Healthcare' },
-        { label: 'Consulting', value: 'Consulting' },
-        { label: 'Education', value: 'Education' },
-      ],
-      selected: [],
-    },
-    expertise: {
-      label: 'Expertise',
-      options: [
-        { label: 'UX Design', value: 'UX' },
-        { label: 'Product Strategy', value: 'Product Strategy' },
-        { label: 'Leadership', value: 'Leadership' },
-        { label: 'Software Architecture', value: 'Software Architecture' },
-        { label: 'Career Growth', value: 'Career Growth' },
-        { label: 'Digital Marketing', value: 'Digital Marketing' },
-      ],
-      selected: [],
-    },
-    experience: {
-      label: 'Experience',
-      options: [
-        { label: '0-2 years', value: '0-2 years' },
-        { label: '3-5 years', value: '3-5 years' },
-        { label: '5-10 years', value: '5-10 years' },
-        { label: '10+ years', value: '10+ years' },
-      ],
-      selected: [],
-    },
-    price: {
-      label: 'Price Range',
-      options: [
-        { label: '₹0 - ₹1000', value: '0-1000' },
-        { label: '₹1000 - ₹2000', value: '1000-2000' },
-        { label: '₹2000 - ₹3000', value: '2000-3000' },
-        { label: '₹3000+', value: '3000+' },
-      ],
-      selected: [],
-    },
+  // Fetch all mentors with their profiles
+  const { data: mentors, isLoading } = useQuery({
+    queryKey: ['mentors'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('mentors')
+        .select(`
+          *,
+          profiles (
+            first_name,
+            last_name,
+            avatar_url,
+            bio
+          )
+        `)
+        .order('hourly_rate', { ascending: true });
+
+      if (error) {
+        console.error("Error fetching mentors:", error);
+        throw error;
+      }
+
+      return data as MentorData[];
+    }
   });
 
-  // Fetch mentors from Supabase
+  // Extract unique expertise and industries
   useEffect(() => {
-    const fetchMentors = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch all mentors from the database
-        const { data: mentorsData, error: mentorsError } = await supabase
-          .from('mentors')
-          .select(`
-            id,
-            hourly_rate,
-            years_experience,
-            industry,
-            expertise,
-            company,
-            job_title,
-            average_rating,
-            review_count,
-            profiles (
-              first_name,
-              last_name,
-              avatar_url
-            )
-          `)
-          .eq('profiles.user_type', 'mentor')
-          .not('hourly_rate', 'is', null)
-          .not('expertise', 'is', null);
-
-        if (mentorsError) throw mentorsError;
-
-        // Fetch availability information for each mentor
-        const formattedMentors: Mentor[] = await Promise.all(
-          mentorsData.map(async (mentor) => {
-            // Get availability count
-            const { data: availabilityData, error: availabilityError } = await supabase
-              .from('mentor_availability')
-              .select('id')
-              .eq('mentor_id', mentor.id)
-              .gte('day', new Date().toISOString().split('T')[0]);
-
-            if (availabilityError) console.error('Error fetching availability:', availabilityError);
-
-            const availabilityCount = availabilityData?.length || 0;
-
-            let experienceCategory = '0-2 years';
-            if (mentor.years_experience > 10) {
-              experienceCategory = '10+ years';
-            } else if (mentor.years_experience > 5) {
-              experienceCategory = '5-10 years';
-            } else if (mentor.years_experience > 2) {
-              experienceCategory = '3-5 years';
-            }
-
-            // Format the mentor data
-            return {
-              id: mentor.id,
-              name: `${mentor.profiles.first_name} ${mentor.profiles.last_name}`,
-              title: mentor.job_title || 'Professional',
-              company: mentor.company || 'Company',
-              expertise: mentor.expertise || [],
-              rating: mentor.average_rating || 4.5,
-              reviewCount: mentor.review_count || 0,
-              hourlyRate: mentor.hourly_rate,
-              availability: availabilityCount > 0 ? 'Has available slots' : 'No availability',
-              availabilityCount: availabilityCount,
-              image: mentor.profiles.avatar_url || 'https://via.placeholder.com/150',
-              industry: mentor.industry || 'Other',
-              experience: experienceCategory,
-            };
-          })
-        );
-
-        setMentors(formattedMentors.length > 0 ? formattedMentors : sampleMentors);
-      } catch (error) {
-        console.error('Error fetching mentors:', error);
-        // Fallback to sample data if API fails
-        setMentors(sampleMentors);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMentors();
-  }, []);
-  
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-  
-  const handleFilterChange = (filterName: string, values: string[]) => {
-    setFilters({
-      ...filters,
-      [filterName]: {
-        ...filters[filterName],
-        selected: values,
-      },
-    });
-  };
-  
-  // Filter mentors based on search query and selected filters
-  const filteredMentors = mentors.filter((mentor) => {
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      if (
-        !mentor.name.toLowerCase().includes(query) &&
-        !mentor.title.toLowerCase().includes(query) &&
-        !mentor.company.toLowerCase().includes(query) &&
-        !mentor.expertise.some(skill => skill.toLowerCase().includes(query))
-      ) {
-        return false;
-      }
-    }
-    
-    // Industry filter
-    if (filters.industry.selected.length > 0 && !filters.industry.selected.includes(mentor.industry)) {
-      return false;
-    }
-    
-    // Expertise filter
-    if (filters.expertise.selected.length > 0 && 
-        !mentor.expertise.some(skill => filters.expertise.selected.includes(skill))) {
-      return false;
-    }
-    
-    // Experience filter
-    if (filters.experience.selected.length > 0 && !filters.experience.selected.includes(mentor.experience)) {
-      return false;
-    }
-    
-    // Price filter
-    if (filters.price.selected.length > 0) {
-      const matchesPrice = filters.price.selected.some(range => {
-        const [min, max] = range.split('-').map(Number);
-        if (!max) { // For the "₹3000+" case
-          return mentor.hourlyRate >= min;
+    if (mentors) {
+      const expertise = new Set<string>();
+      const industries = new Set<string>();
+      
+      mentors.forEach(mentor => {
+        if (mentor.expertise) {
+          mentor.expertise.forEach(exp => expertise.add(exp));
         }
-        return mentor.hourlyRate >= min && mentor.hourlyRate <= max;
+        if (mentor.industry) {
+          industries.add(mentor.industry);
+        }
       });
       
-      if (!matchesPrice) {
-        return false;
-      }
+      setAvailableExpertise(Array.from(expertise));
+      setAvailableIndustries(Array.from(industries));
     }
+  }, [mentors]);
+
+  // Filter mentors based on criteria
+  const filteredMentors = mentors?.filter(mentor => {
+    const nameMatch = 
+      !searchTerm || 
+      (mentor.profiles.first_name && mentor.profiles.first_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (mentor.profiles.last_name && mentor.profiles.last_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (mentor.job_title && mentor.job_title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (mentor.company && mentor.company.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    return true;
+    const priceMatch = 
+      mentor.hourly_rate >= priceRange[0] && 
+      mentor.hourly_rate <= priceRange[1];
+    
+    const expertiseMatch = 
+      selectedExpertise.length === 0 || 
+      selectedExpertise.some(exp => mentor.expertise?.includes(exp));
+    
+    const industryMatch = 
+      selectedIndustries.length === 0 || 
+      (mentor.industry && selectedIndustries.includes(mentor.industry));
+    
+    return nameMatch && priceMatch && expertiseMatch && industryMatch;
   });
-  
+
+  const toggleExpertise = (expertise: string) => {
+    setSelectedExpertise(prev => 
+      prev.includes(expertise) 
+        ? prev.filter(e => e !== expertise) 
+        : [...prev, expertise]
+    );
+  };
+
+  const toggleIndustry = (industry: string) => {
+    setSelectedIndustries(prev => 
+      prev.includes(industry) 
+        ? prev.filter(i => i !== industry) 
+        : [...prev, industry]
+    );
+  };
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setPriceRange([0, 5000]);
+    setSelectedExpertise([]);
+    setSelectedIndustries([]);
+  };
+
+  const handleMentorSelect = (mentorId: string) => {
+    setSelectedMentorId(mentorId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToMentors = () => {
+    setSelectedMentorId(null);
+  };
+
+  if (selectedMentorId) {
+    return (
+      <div className="container mx-auto py-12 px-4">
+        <MentorDetailView mentorId={selectedMentorId} onBack={handleBackToMentors} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen pt-20 pb-16">
-      <div className="container mx-auto px-4">
-        {/* Page header */}
-        <div className="text-center mb-10 mt-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">Find Your Perfect Mentor</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Connect with industry experts for personalized guidance to accelerate your career growth.
-          </p>
-        </div>
-        
-        {/* Filters and View Controls */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {isLoading ? 'Loading mentors...' : 
-                `${filteredMentors.length} ${filteredMentors.length === 1 ? 'Mentor' : 'Mentors'} Available`}
-            </h2>
-            
-            <div className="flex items-center space-x-2">
-              <Button
-                variant={viewMode === 'grid' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="p-2"
-              >
-                <Grid size={18} />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="p-2"
-              >
-                <List size={18} />
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                className="md:hidden flex items-center"
-                onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-              >
-                <SlidersHorizontal size={18} className="mr-1.5" />
+    <div className="container mx-auto py-12 px-4">
+      <h1 className="text-3xl font-bold mb-2">Find Mentors</h1>
+      <p className="text-muted-foreground mb-8">Connect with experienced mentors who can guide you on your career path.</p>
+      
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Filters for larger screens */}
+        <div className="hidden md:block w-64 space-y-6">
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-medium mb-4 flex items-center">
+                <Filter className="h-4 w-4 mr-2" />
                 Filters
-              </Button>
-            </div>
-          </div>
-          
-          {/* Desktop Filters */}
-          <div className="hidden md:block">
-            <FilterBar
-              onSearch={handleSearch}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-            />
-          </div>
-          
-          {/* Mobile Filters (collapsible) */}
-          <div className={cn("md:hidden", mobileFiltersOpen ? "block" : "hidden")}>
-            <FilterBar
-              onSearch={handleSearch}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-            />
-          </div>
+              </h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Price Range (₹/hour)</label>
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span>₹{priceRange[0]}</span>
+                    <span>₹{priceRange[1]}</span>
+                  </div>
+                  <Slider
+                    value={priceRange}
+                    min={0}
+                    max={5000}
+                    step={100}
+                    onValueChange={setPriceRange}
+                    className="mb-6"
+                  />
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Expertise</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    {availableExpertise.map(expertise => (
+                      <div 
+                        key={expertise} 
+                        className="flex items-center"
+                        onClick={() => toggleExpertise(expertise)}
+                      >
+                        <div className={`h-4 w-4 rounded border flex items-center justify-center cursor-pointer
+                          ${selectedExpertise.includes(expertise) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                        >
+                          {selectedExpertise.includes(expertise) && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <span className="ml-2 text-sm cursor-pointer">{expertise}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Industry</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                    {availableIndustries.map(industry => (
+                      <div 
+                        key={industry} 
+                        className="flex items-center"
+                        onClick={() => toggleIndustry(industry)}
+                      >
+                        <div className={`h-4 w-4 rounded border flex items-center justify-center cursor-pointer
+                          ${selectedIndustries.includes(industry) ? 'bg-primary border-primary' : 'border-gray-300'}`}
+                        >
+                          {selectedIndustries.includes(industry) && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
+                        <span className="ml-2 text-sm cursor-pointer">{industry}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={resetFilters}
+                  className="w-full"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reset Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         
-        {/* Loading Skeleton */}
-        {isLoading ? (
-          <div className={cn(
-            viewMode === 'grid' 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              : "flex flex-col space-y-4"
-          )}>
-            {Array(6).fill(0).map((_, i) => (
-              <div 
-                key={i}
-                className="bg-slate-100 animate-pulse rounded-lg h-64"
-              ></div>
-            ))}
-          </div>
-        ) : filteredMentors.length > 0 ? (
-          <div className={cn(
-            viewMode === 'grid' 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
-              : "flex flex-col space-y-4"
-          )}>
-            {filteredMentors.map((mentor) => (
-              <MentorCard 
-                key={mentor.id} 
-                mentor={mentor} 
-                className={viewMode === 'list' ? "flex flex-row p-4" : ""}
+        <div className="flex-1">
+          {/* Search Bar */}
+          <div className="mb-6 flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search mentors by name, job title, or company..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
               />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <h3 className="text-xl font-semibold mb-2">No mentors found</h3>
-            <p className="text-muted-foreground mb-6">
-              Try adjusting your filters or search criteria to find available mentors.
-            </p>
+            </div>
+            
+            {/* Mobile Filter Button */}
             <Button 
               variant="outline" 
-              onClick={() => {
-                setSearchQuery('');
-                setFilters(Object.keys(filters).reduce((acc, key) => {
-                  acc[key] = { ...filters[key], selected: [] };
-                  return acc;
-                }, {} as typeof filters));
-              }}
+              className="md:hidden" 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
-              Clear all filters
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
             </Button>
           </div>
-        )}
+          
+          {/* Mobile Filters */}
+          <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen} className="md:hidden mb-6">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full flex items-center justify-between">
+                <span>Filters</span>
+                {isFilterOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <Card className="mt-2">
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Price Range (₹/hour)</label>
+                      <div className="flex justify-between mb-2 text-sm">
+                        <span>₹{priceRange[0]}</span>
+                        <span>₹{priceRange[1]}</span>
+                      </div>
+                      <Slider
+                        value={priceRange}
+                        min={0}
+                        max={5000}
+                        step={100}
+                        onValueChange={setPriceRange}
+                        className="mb-6"
+                      />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Selected Expertise</h4>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {selectedExpertise.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">None selected</span>
+                        ) : (
+                          selectedExpertise.map(exp => (
+                            <Badge 
+                              key={exp} 
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {exp}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleExpertise(exp);
+                                }}
+                              />
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Selected Industries</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedIndustries.length === 0 ? (
+                          <span className="text-sm text-muted-foreground">None selected</span>
+                        ) : (
+                          selectedIndustries.map(ind => (
+                            <Badge 
+                              key={ind} 
+                              variant="secondary"
+                              className="flex items-center gap-1"
+                            >
+                              {ind}
+                              <X 
+                                className="h-3 w-3 cursor-pointer" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleIndustry(ind);
+                                }}
+                              />
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={resetFilters}
+                      className="w-full"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Reset Filters
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {/* Active Filters */}
+          {(selectedExpertise.length > 0 || selectedIndustries.length > 0 || priceRange[0] > 0 || priceRange[1] < 5000) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {priceRange[0] > 0 || priceRange[1] < 5000 ? (
+                <Badge variant="outline" className="bg-slate-50">
+                  ₹{priceRange[0]} - ₹{priceRange[1]}/hr
+                </Badge>
+              ) : null}
+              
+              {selectedExpertise.map(exp => (
+                <Badge key={exp} variant="outline" className="bg-slate-50">
+                  {exp}
+                </Badge>
+              ))}
+              
+              {selectedIndustries.map(ind => (
+                <Badge key={ind} variant="outline" className="bg-slate-50">
+                  {ind}
+                </Badge>
+              ))}
+              
+              {(selectedExpertise.length > 0 || selectedIndustries.length > 0 || priceRange[0] > 0 || priceRange[1] < 5000) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={resetFilters}
+                  className="h-6 text-xs px-2"
+                >
+                  Clear all
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Results Count */}
+          <div className="mb-6">
+            <p className="text-sm text-muted-foreground">
+              {isLoading 
+                ? 'Loading mentors...' 
+                : `Showing ${filteredMentors?.length || 0} mentors`}
+            </p>
+          </div>
+          
+          {/* Mentor Cards */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="p-6">
+                      <div className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[150px]" />
+                          <Skeleton className="h-4 w-[100px]" />
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-2/3" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredMentors?.length === 0 ? (
+            <div className="text-center py-12 border rounded-lg bg-slate-50">
+              <p className="text-lg font-medium">No mentors match your criteria</p>
+              <p className="text-muted-foreground mt-1">Try adjusting your filters</p>
+              <Button className="mt-4" onClick={resetFilters}>Reset Filters</Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMentors?.map(mentor => (
+                <div 
+                  key={mentor.id} 
+                  onClick={() => handleMentorSelect(mentor.id)}
+                  className="cursor-pointer transform hover:scale-[1.02] transition-transform"
+                >
+                  <MentorCard
+                    id={mentor.id}
+                    name={`${mentor.profiles.first_name || ''} ${mentor.profiles.last_name || ''}`}
+                    title={mentor.job_title || ''}
+                    hourlyRate={mentor.hourly_rate}
+                    rating={mentor.average_rating}
+                    reviewCount={mentor.review_count}
+                    expertise={mentor.expertise || []}
+                    industry={mentor.industry || ''}
+                    bio={mentor.profiles.bio || ''}
+                    avatarUrl={mentor.profiles.avatar_url || ''}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
