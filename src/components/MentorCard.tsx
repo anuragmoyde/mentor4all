@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { Star, Clock, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, Clock, Calendar, X } from 'lucide-react';
 import Button from './Button';
 import { cn } from '@/lib/utils';
+import BookingCalendar from './calendar/BookingCalendar';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 interface MentorCardProps {
   mentor: {
@@ -16,11 +18,14 @@ interface MentorCardProps {
     hourlyRate: number;
     availability: string;
     image: string;
+    availabilityCount?: number;
   };
   className?: string;
 }
 
 const MentorCard: React.FC<MentorCardProps> = ({ mentor, className }) => {
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+
   return (
     <div 
       className={cn(
@@ -77,20 +82,46 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, className }) => {
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center text-sm text-muted-foreground">
             <Clock size={16} className="mr-1" />
-            <span>{mentor.availability}</span>
+            <span>
+              {mentor.availabilityCount 
+                ? `${mentor.availabilityCount} available slots` 
+                : mentor.availability}
+            </span>
           </div>
           <div className="text-base font-semibold">₹{mentor.hourlyRate}/hour</div>
         </div>
         
-        <div className="flex gap-3">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Calendar size={16} className="mr-2" />
-            Schedule
-          </Button>
-          <Button variant="primary" size="sm" className="flex-1">
-            View Profile
-          </Button>
-        </div>
+        <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+          <div className="flex gap-3">
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="flex-1">
+                <Calendar size={16} className="mr-2" />
+                Book Session
+              </Button>
+            </DialogTrigger>
+            <Button variant="primary" size="sm" className="flex-1">
+              View Profile
+            </Button>
+          </div>
+          
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold">{mentor.name}</h2>
+              <button 
+                onClick={() => setIsBookingOpen(false)}
+                className="rounded-full p-1 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <BookingCalendar 
+              mentorId={mentor.id}
+              mentorName={mentor.name}
+              hourlyRate={mentor.hourlyRate}
+              onBookingComplete={() => setIsBookingOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

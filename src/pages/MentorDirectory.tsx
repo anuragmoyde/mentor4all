@@ -1,13 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import FilterBar from '../components/FilterBar';
 import MentorCard from '../components/MentorCard';
 import { Grid, List, SlidersHorizontal } from 'lucide-react';
 import Button from '../components/Button';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
-// Sample data for mentors
-const mentors = [
+interface Mentor {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  expertise: string[];
+  rating: number;
+  reviewCount: number;
+  hourlyRate: number;
+  availability: string;
+  image: string;
+  industry: string;
+  experience: string;
+  availabilityCount?: number;
+}
+
+// Sample data for mentors (fallback data if API fails)
+const sampleMentors = [
   {
     id: '1',
     name: 'Jennifer Lee',
@@ -16,7 +33,7 @@ const mentors = [
     expertise: ['Product Strategy', 'UX', 'Team Leadership'],
     rating: 4.9,
     reviewCount: 127,
-    hourlyRate: 120,
+    hourlyRate: 2000,
     availability: 'Next available: Tomorrow',
     image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Technology',
@@ -30,7 +47,7 @@ const mentors = [
     expertise: ['Software Architecture', 'Career Growth', 'Leadership'],
     rating: 4.8,
     reviewCount: 94,
-    hourlyRate: 110,
+    hourlyRate: 2200,
     availability: 'Next available: Today',
     image: 'https://images.unsplash.com/photo-1600486913747-55e5470d6f40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Technology',
@@ -44,7 +61,7 @@ const mentors = [
     expertise: ['Brand Strategy', 'Digital Marketing', 'Analytics'],
     rating: 4.7,
     reviewCount: 86,
-    hourlyRate: 100,
+    hourlyRate: 1800,
     availability: 'Next available: Thursday',
     image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Marketing',
@@ -58,7 +75,7 @@ const mentors = [
     expertise: ['Scaling Teams', 'Technical Strategy', 'Startups'],
     rating: 4.9,
     reviewCount: 113,
-    hourlyRate: 150,
+    hourlyRate: 2500,
     availability: 'Next available: Friday',
     image: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Technology',
@@ -72,7 +89,7 @@ const mentors = [
     expertise: ['UX Research', 'Design Systems', 'UI Design'],
     rating: 4.8,
     reviewCount: 79,
-    hourlyRate: 95,
+    hourlyRate: 1900,
     availability: 'Next available: Monday',
     image: 'https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Design',
@@ -86,7 +103,7 @@ const mentors = [
     expertise: ['Financial Planning', 'Investment', 'Career Transition'],
     rating: 4.6,
     reviewCount: 68,
-    hourlyRate: 130,
+    hourlyRate: 2300,
     availability: 'Next available: Wednesday',
     image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
     industry: 'Finance',
@@ -98,6 +115,8 @@ const MentorDirectory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [filters, setFilters] = useState({
     industry: {
@@ -108,6 +127,8 @@ const MentorDirectory: React.FC = () => {
         { label: 'Design', value: 'Design' },
         { label: 'Finance', value: 'Finance' },
         { label: 'Healthcare', value: 'Healthcare' },
+        { label: 'Consulting', value: 'Consulting' },
+        { label: 'Education', value: 'Education' },
       ],
       selected: [],
     },
@@ -136,18 +157,102 @@ const MentorDirectory: React.FC = () => {
     price: {
       label: 'Price Range',
       options: [
-        { label: '$0 - $50', value: '0-50' },
-        { label: '$50 - $100', value: '50-100' },
-        { label: '$100 - $150', value: '100-150' },
-        { label: '$150+', value: '150+' },
+        { label: '₹0 - ₹1000', value: '0-1000' },
+        { label: '₹1000 - ₹2000', value: '1000-2000' },
+        { label: '₹2000 - ₹3000', value: '2000-3000' },
+        { label: '₹3000+', value: '3000+' },
       ],
       selected: [],
     },
   });
+
+  // Fetch mentors from Supabase
+  useEffect(() => {
+    const fetchMentors = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch all mentors from the database
+        const { data: mentorsData, error: mentorsError } = await supabase
+          .from('mentors')
+          .select(`
+            id,
+            hourly_rate,
+            years_experience,
+            industry,
+            expertise,
+            company,
+            job_title,
+            average_rating,
+            review_count,
+            profiles (
+              first_name,
+              last_name,
+              avatar_url
+            )
+          `)
+          .eq('profiles.user_type', 'mentor')
+          .not('hourly_rate', 'is', null)
+          .not('expertise', 'is', null);
+
+        if (mentorsError) throw mentorsError;
+
+        // Fetch availability information for each mentor
+        const formattedMentors: Mentor[] = await Promise.all(
+          mentorsData.map(async (mentor) => {
+            // Get availability count
+            const { data: availabilityData, error: availabilityError } = await supabase
+              .from('mentor_availability')
+              .select('id')
+              .eq('mentor_id', mentor.id)
+              .gte('day', new Date().toISOString().split('T')[0]);
+
+            if (availabilityError) console.error('Error fetching availability:', availabilityError);
+
+            const availabilityCount = availabilityData?.length || 0;
+
+            let experienceCategory = '0-2 years';
+            if (mentor.years_experience > 10) {
+              experienceCategory = '10+ years';
+            } else if (mentor.years_experience > 5) {
+              experienceCategory = '5-10 years';
+            } else if (mentor.years_experience > 2) {
+              experienceCategory = '3-5 years';
+            }
+
+            // Format the mentor data
+            return {
+              id: mentor.id,
+              name: `${mentor.profiles.first_name} ${mentor.profiles.last_name}`,
+              title: mentor.job_title || 'Professional',
+              company: mentor.company || 'Company',
+              expertise: mentor.expertise || [],
+              rating: mentor.average_rating || 4.5,
+              reviewCount: mentor.review_count || 0,
+              hourlyRate: mentor.hourly_rate,
+              availability: availabilityCount > 0 ? 'Has available slots' : 'No availability',
+              availabilityCount: availabilityCount,
+              image: mentor.profiles.avatar_url || 'https://via.placeholder.com/150',
+              industry: mentor.industry || 'Other',
+              experience: experienceCategory,
+            };
+          })
+        );
+
+        setMentors(formattedMentors.length > 0 ? formattedMentors : sampleMentors);
+      } catch (error) {
+        console.error('Error fetching mentors:', error);
+        // Fallback to sample data if API fails
+        setMentors(sampleMentors);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMentors();
+  }, []);
   
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // Implement search logic here
   };
   
   const handleFilterChange = (filterName: string, values: string[]) => {
@@ -158,7 +263,6 @@ const MentorDirectory: React.FC = () => {
         selected: values,
       },
     });
-    // Implement filter logic here
   };
   
   // Filter mentors based on search query and selected filters
@@ -196,7 +300,7 @@ const MentorDirectory: React.FC = () => {
     if (filters.price.selected.length > 0) {
       const matchesPrice = filters.price.selected.some(range => {
         const [min, max] = range.split('-').map(Number);
-        if (!max) { // For the "$150+" case
+        if (!max) { // For the "₹3000+" case
           return mentor.hourlyRate >= min;
         }
         return mentor.hourlyRate >= min && mentor.hourlyRate <= max;
@@ -225,7 +329,8 @@ const MentorDirectory: React.FC = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">
-              {filteredMentors.length} {filteredMentors.length === 1 ? 'Mentor' : 'Mentors'} Available
+              {isLoading ? 'Loading mentors...' : 
+                `${filteredMentors.length} ${filteredMentors.length === 1 ? 'Mentor' : 'Mentors'} Available`}
             </h2>
             
             <div className="flex items-center space-x-2">
@@ -277,8 +382,21 @@ const MentorDirectory: React.FC = () => {
           </div>
         </div>
         
-        {/* Mentors Grid/List */}
-        {filteredMentors.length > 0 ? (
+        {/* Loading Skeleton */}
+        {isLoading ? (
+          <div className={cn(
+            viewMode === 'grid' 
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              : "flex flex-col space-y-4"
+          )}>
+            {Array(6).fill(0).map((_, i) => (
+              <div 
+                key={i}
+                className="bg-slate-100 animate-pulse rounded-lg h-64"
+              ></div>
+            ))}
+          </div>
+        ) : filteredMentors.length > 0 ? (
           <div className={cn(
             viewMode === 'grid' 
               ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
