@@ -13,7 +13,7 @@ import MentorProfileForm from '@/components/profile/MentorProfileForm';
 import { motion } from 'framer-motion';
 
 const Profile = () => {
-  const { user, profile, isLoading, updateProfile } = useAuth();
+  const { user, profile, isLoading, updateProfile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -55,6 +55,7 @@ const Profile = () => {
         lastName={profile.last_name || ''}
         userType={profile.user_type}
         avatarUrl={profile.avatar_url}
+        signOut={signOut}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
@@ -78,6 +79,7 @@ const Profile = () => {
             <AccountTypeSection 
               userType={profile.user_type}
               userId={user.id}
+              updateProfile={updateProfile}
             />
           </div>
         </TabsContent>
