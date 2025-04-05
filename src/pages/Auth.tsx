@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -45,6 +46,11 @@ const Auth: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<'mentor' | 'mentee'>('mentee');
   const [processingOAuth, setProcessingOAuth] = useState(false);
 
+  // Debug logs to track authentication state
+  useEffect(() => {
+    console.log('Auth component - Auth state:', { user, profile, authLoading, processingOAuth });
+  }, [user, profile, authLoading, processingOAuth]);
+
   useEffect(() => {
     const userTypeParam = searchParams.get('user_type');
     
@@ -83,15 +89,20 @@ const Auth: React.FC = () => {
     }
   }, [user, profile, searchParams, navigate, updateProfile, authLoading]);
 
+  // Handle redirection when authenticated
   useEffect(() => {
-    if (user && profile && !processingOAuth) {
+    if (user && profile && !processingOAuth && !authLoading) {
+      console.log('Auth component - Redirecting authenticated user:', { 
+        userType: profile.user_type,
+        destination: profile.user_type === 'mentor' ? '/mentor-dashboard' : '/dashboard'
+      });
       if (profile.user_type === 'mentor') {
         navigate('/mentor-dashboard');
       } else {
         navigate('/dashboard');
       }
     }
-  }, [user, profile, navigate, processingOAuth]);
+  }, [user, profile, navigate, processingOAuth, authLoading]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -117,10 +128,17 @@ const Auth: React.FC = () => {
     setAuthError(null);
     setIsLoading(true);
     try {
+      console.log('Attempting to sign in with:', values.email);
       const { error } = await signIn(values.email, values.password);
       if (error) {
+        console.error('Login error:', error);
         setAuthError(error.message);
+      } else {
+        console.log('Sign in successful');
       }
+    } catch (error) {
+      console.error('Unexpected login error:', error);
+      setAuthError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -130,6 +148,7 @@ const Auth: React.FC = () => {
     setAuthError(null);
     setIsLoading(true);
     try {
+      console.log('Attempting to sign up with:', values.email);
       const { error } = await signUp(
         values.email,
         values.password,
@@ -138,8 +157,14 @@ const Auth: React.FC = () => {
         values.userType
       );
       if (error) {
+        console.error('Signup error:', error);
         setAuthError(error.message);
+      } else {
+        console.log('Sign up successful');
       }
+    } catch (error) {
+      console.error('Unexpected signup error:', error);
+      setAuthError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -153,8 +178,10 @@ const Auth: React.FC = () => {
   const handleRoleSelectionComplete = async () => {
     setIsLoading(true);
     try {
+      console.log('Attempting to sign in with Google as:', selectedRole);
       await signInWithGoogle(selectedRole);
     } catch (error) {
+      console.error('Google sign in error:', error);
       setAuthError((error as Error).message);
     } finally {
       setIsLoading(false);
@@ -162,12 +189,16 @@ const Auth: React.FC = () => {
     }
   };
 
+  // Show loading state while authenticating
   if (authLoading || processingOAuth) {
     return (
       <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-200px)]">
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-lg font-medium">Authenticating...</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {processingOAuth ? 'Setting up your profile...' : 'Verifying your credentials...'}
+          </p>
         </div>
       </div>
     );
@@ -220,7 +251,12 @@ const Auth: React.FC = () => {
               className="flex-1"
               disabled={isLoading}
             >
-              {isLoading ? 'Processing...' : 'Continue'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : 'Continue'}
             </Button>
           </div>
         </div>
@@ -281,7 +317,12 @@ const Auth: React.FC = () => {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Logging in...' : 'Log In'}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Logging in...
+                    </>
+                  ) : 'Log In'}
                 </Button>
               </form>
             </Form>
