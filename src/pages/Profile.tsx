@@ -67,16 +67,17 @@ const Profile = () => {
 
         <TabsContent value="general" className="mt-6 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <ProfilePictureCard avatarUrl={profile.avatar_url} />
+            <ProfilePictureCard 
+              avatarUrl={profile.avatar_url}
+              firstName={profile.first_name}
+              lastName={profile.last_name}
+              userId={user.id}
+              updateProfile={updateProfile}
+            />
             
             <AccountTypeSection 
               userType={profile.user_type}
               userId={user.id}
-              onUserTypeChange={(newUserType) => {
-                if (updateProfile) {
-                  updateProfile({ ...profile, user_type: newUserType });
-                }
-              }}
             />
           </div>
         </TabsContent>
@@ -86,7 +87,7 @@ const Profile = () => {
             <>
               <MentorProfileForm onProfileUpdated={handleMentorProfileComplete} />
               <MentorAvailabilitySection />
-              <MentorProfileCompleteCard />
+              <MentorProfileCompleteCard userId={user.id} />
             </>
           )}
         </TabsContent>

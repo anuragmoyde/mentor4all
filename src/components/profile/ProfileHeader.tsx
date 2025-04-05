@@ -5,14 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { User, LogOut, ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProfileHeaderProps {
+  firstName?: string;
+  lastName?: string;
   userType?: string;
-  signOut: () => Promise<void>;
+  avatarUrl?: string;
 }
 
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userType, signOut }) => {
+const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
+  firstName, 
+  lastName, 
+  userType 
+}) => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   // Helper function to get badge color based on user type
   const getUserTypeColor = (userType?: string) => {
