@@ -264,7 +264,20 @@ const Index: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredMentors.map((mentor) => (
-              <MentorCard key={mentor.id} mentor={mentor} />
+              <MentorCard 
+                key={mentor.id}
+                id={mentor.id}
+                name={mentor.name}
+                title={mentor.title}
+                hourlyRate={mentor.hourlyRate}
+                rating={mentor.rating}
+                reviewCount={mentor.reviewCount}
+                expertise={mentor.expertise}
+                industry="Business"
+                bio=""
+                avatarUrl={mentor.image}
+                company={mentor.company}
+              />
             ))}
           </div>
         </div>

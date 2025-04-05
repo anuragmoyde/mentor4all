@@ -9,10 +9,15 @@ import { toast } from '@/hooks/use-toast';
 import AvailabilityCalendar, { TimeSlot } from '@/components/calendar/AvailabilityCalendar';
 import { format } from 'date-fns';
 
+// Define an extended version of TimeSlot that includes isBooked
+interface AvailabilitySlot extends TimeSlot {
+  isBooked?: boolean;
+}
+
 const MentorAvailabilitySection = () => {
   const { user, profile } = useAuth();
   const [showCalendar, setShowCalendar] = useState(false);
-  const [existingSlots, setExistingSlots] = useState<TimeSlot[]>([]);
+  const [existingSlots, setExistingSlots] = useState<AvailabilitySlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +41,7 @@ const MentorAvailabilitySection = () => {
       if (error) throw error;
       
       // Convert to the format expected by the AvailabilityCalendar component
-      const formattedSlots = data.map((slot): TimeSlot => ({
+      const formattedSlots = data.map((slot): AvailabilitySlot => ({
         id: slot.id,
         day: new Date(slot.day),
         startTime: slot.start_time.substring(0, 5), // Format: HH:MM

@@ -7,11 +7,19 @@ import { motion } from 'framer-motion';
 import { User, LogOut, ArrowLeft } from 'lucide-react';
 
 interface ProfileHeaderProps {
+  firstName?: string;
+  lastName?: string;
   userType?: string;
+  avatarUrl?: string;
   signOut: () => Promise<void>;
 }
 
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({ userType, signOut }) => {
+const ProfileHeader: React.FC<ProfileHeaderProps> = ({ 
+  firstName, 
+  lastName, 
+  userType,
+  signOut 
+}) => {
   const navigate = useNavigate();
 
   // Helper function to get badge color based on user type

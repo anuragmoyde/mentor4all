@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +40,6 @@ const MentorDirectory = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedMentorId, setSelectedMentorId] = useState<string | null>(null);
 
-  // Fetch all mentors with their profiles
   const { data: mentors, isLoading } = useQuery({
     queryKey: ['mentors'],
     queryFn: async () => {
@@ -67,7 +65,6 @@ const MentorDirectory = () => {
     }
   });
 
-  // Extract unique expertise and industries
   useEffect(() => {
     if (mentors) {
       const expertise = new Set<string>();
@@ -87,7 +84,6 @@ const MentorDirectory = () => {
     }
   }, [mentors]);
 
-  // Filter mentors based on criteria
   const filteredMentors = mentors?.filter(mentor => {
     const nameMatch = 
       !searchTerm || 
@@ -157,7 +153,6 @@ const MentorDirectory = () => {
       <p className="text-muted-foreground mb-8">Connect with experienced mentors who can guide you on your career path.</p>
       
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Filters for larger screens */}
         <div className="hidden md:block w-64 space-y-6">
           <Card>
             <CardContent className="pt-6">
@@ -238,7 +233,6 @@ const MentorDirectory = () => {
         </div>
         
         <div className="flex-1">
-          {/* Search Bar */}
           <div className="mb-6 flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -250,7 +244,6 @@ const MentorDirectory = () => {
               />
             </div>
             
-            {/* Mobile Filter Button */}
             <Button 
               variant="outline" 
               className="md:hidden" 
@@ -261,7 +254,6 @@ const MentorDirectory = () => {
             </Button>
           </div>
           
-          {/* Mobile Filters */}
           <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen} className="md:hidden mb-6">
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full flex items-center justify-between">
@@ -360,41 +352,6 @@ const MentorDirectory = () => {
             </CollapsibleContent>
           </Collapsible>
           
-          {/* Active Filters */}
-          {(selectedExpertise.length > 0 || selectedIndustries.length > 0 || priceRange[0] > 0 || priceRange[1] < 5000) && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {priceRange[0] > 0 || priceRange[1] < 5000 ? (
-                <Badge variant="outline" className="bg-slate-50">
-                  ₹{priceRange[0]} - ₹{priceRange[1]}/hr
-                </Badge>
-              ) : null}
-              
-              {selectedExpertise.map(exp => (
-                <Badge key={exp} variant="outline" className="bg-slate-50">
-                  {exp}
-                </Badge>
-              ))}
-              
-              {selectedIndustries.map(ind => (
-                <Badge key={ind} variant="outline" className="bg-slate-50">
-                  {ind}
-                </Badge>
-              ))}
-              
-              {(selectedExpertise.length > 0 || selectedIndustries.length > 0 || priceRange[0] > 0 || priceRange[1] < 5000) && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={resetFilters}
-                  className="h-6 text-xs px-2"
-                >
-                  Clear all
-                </Button>
-              )}
-            </div>
-          )}
-          
-          {/* Results Count */}
           <div className="mb-6">
             <p className="text-sm text-muted-foreground">
               {isLoading 
@@ -403,7 +360,6 @@ const MentorDirectory = () => {
             </p>
           </div>
           
-          {/* Mentor Cards */}
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -445,6 +401,7 @@ const MentorDirectory = () => {
                     id={mentor.id}
                     name={`${mentor.profiles.first_name || ''} ${mentor.profiles.last_name || ''}`}
                     title={mentor.job_title || ''}
+                    company={mentor.company || ''}
                     hourlyRate={mentor.hourly_rate}
                     rating={mentor.average_rating}
                     reviewCount={mentor.review_count}
