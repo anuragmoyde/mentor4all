@@ -28,6 +28,7 @@ const initialFeaturedMentors = [
     availability: "Next available: Tomorrow",
     image:
       "https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+    bio: "Serial entrepreneur with expertise in scaling startups and securing funding."
   },
   {
     id: "2",
@@ -41,6 +42,7 @@ const initialFeaturedMentors = [
     availability: "Next available: Today",
     image:
       "https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+    bio: "Legal advisor specializing in startup law, intellectual property rights, and compliance."
   },
   {
     id: "3",
@@ -54,6 +56,7 @@ const initialFeaturedMentors = [
     availability: "Next available: Thursday",
     image:
       "https://images.unsplash.com/photo-1598641795816-a84ac9eac40c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
+    bio: "Impact investor focused on social enterprises and sustainable development."
   },
 ];
 
@@ -173,7 +176,7 @@ const Index: React.FC = () => {
             hourlyRate: mentor.hourly_rate || 1000,
             availability: "Check availability",
             image: mentor.profiles?.avatar_url || 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-            bio: mentor.profiles?.bio || ''
+            bio: mentor.profiles?.bio || 'Experienced mentor ready to guide you through your journey.'
           }));
           setFeaturedMentors(transformedMentors);
         }
@@ -355,7 +358,7 @@ const Index: React.FC = () => {
                   reviewCount={mentor.reviewCount}
                   expertise={mentor.expertise}
                   industry="Business"
-                  bio={mentor.bio || ""}
+                  bio={mentor.bio}
                   avatarUrl={mentor.image}
                 />
               ))
