@@ -1,353 +1,164 @@
-import React, { useState, useEffect } from "react";
-import Hero from "../components/Hero";
-import MentorCard from "../components/MentorCard";
-import SessionCard from "../components/SessionCard";
-import TestimonialSection from "../components/TestimonialSection";
-import Button from "../components/Button";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  ArrowRight,
-  Briefcase,
-  GraduationCap,
-  Globe,
-  Lightbulb,
-  Users,
-  Heart,
-} from "lucide-react";
 
-const initialFeaturedMentors = [
-  {
-    id: "1",
-    name: "Neha Mehta",
-    title: "Serial Entrepreneur",
-    company: "TechVentures India",
-    expertise: ["Business Strategy", "Startup Scaling", "Funding"],
-    rating: 4.9,
-    reviewCount: 127,
-    hourlyRate: 2000,
-    availability: "Next available: Tomorrow",
-    image:
-      "https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    bio: "Serial entrepreneur with expertise in scaling startups and securing funding."
-  },
-  {
-    id: "2",
-    name: "Rajiv Khanna",
-    title: "Legal Advisor",
-    company: "LegalEdge Consultants",
-    expertise: ["Startup Law", "IP Rights", "Compliance"],
-    rating: 4.8,
-    reviewCount: 94,
-    hourlyRate: 1800,
-    availability: "Next available: Today",
-    image:
-      "https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    bio: "Legal advisor specializing in startup law, intellectual property rights, and compliance."
-  },
-  {
-    id: "3",
-    name: "Ananya Desai",
-    title: "Impact Investor",
-    company: "Samridhi Ventures",
-    expertise: ["Social Enterprise", "Impact Measurement", "Funding"],
-    rating: 4.7,
-    reviewCount: 86,
-    hourlyRate: 1500,
-    availability: "Next available: Thursday",
-    image:
-      "https://images.unsplash.com/photo-1598641795816-a84ac9eac40c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    bio: "Impact investor focused on social enterprises and sustainable development."
-  },
-];
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import Hero from "@/components/Hero";
+import TestimonialSection from "@/components/TestimonialSection";
+import MentorCard from "@/components/MentorCard";
+import FilterBar from "@/components/FilterBar";
+import Footer from "@/components/Footer";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-const featuredSessions = [
-  {
-    id: "1",
-    title: "Building a Scalable Startup: From Idea to Series A",
-    mentor: {
-      name: "Vivek Sharma",
-      image:
-        "https://images.unsplash.com/photo-1623605931891-d5b95ee98459?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    },
-    date: "June 15, 2023 - 10:00 AM IST",
-    duration: "2 hours",
-    capacity: 30,
-    enrolled: 21,
-    price: 999,
-    category: "Entrepreneurship",
-  },
-  {
-    id: "2",
-    title: "Leadership Skills for New-Age Business Leaders",
-    mentor: {
-      name: "Sunita Reddy",
-      image:
-        "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    },
-    date: "June 20, 2023 - 1:00 PM IST",
-    duration: "3 hours",
-    capacity: 25,
-    enrolled: 18,
-    price: 1499,
-    category: "Leadership",
-  },
-  {
-    id: "3",
-    title: "Building Sustainable Social Enterprises",
-    mentor: {
-      name: "Karan Verma",
-      image:
-        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80",
-    },
-    date: "June 25, 2023 - 9:00 AM IST",
-    duration: "4 hours",
-    capacity: 40,
-    enrolled: 32,
-    price: 1299,
-    category: "Social Impact",
-  },
-];
-
-const mentorCategories = [
-  {
-    title: "Business & Entrepreneurship",
-    description:
-      "Connect with founders and business leaders to build and scale your venture",
-    icon: <Briefcase className="w-10 h-10 text-primary" />,
-  },
-  {
-    title: "Career Growth & Professional Development",
-    description:
-      "Accelerate your professional journey with tailored guidance from industry experts",
-    icon: <GraduationCap className="w-10 h-10 text-primary" />,
-  },
-  {
-    title: "Social Impact & Non-Profit",
-    description:
-      "Create meaningful change with guidance from experienced social entrepreneurs",
-    icon: <Heart className="w-10 h-10 text-primary" />,
-  },
-];
-
-const Index: React.FC = () => {
-  const [featuredMentors, setFeaturedMentors] = useState(initialFeaturedMentors);
+const Index = () => {
+  const navigate = useNavigate();
+  const [mentors, setMentors] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
+  const [selectedExpertise, setSelectedExpertise] = useState<string | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
 
+  // Fetch mentors data from Supabase
   useEffect(() => {
-    const fetchFeaturedMentors = async () => {
+    const fetchMentors = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        
-        const { data, error } = await supabase
+        let query = supabase
           .from('mentors')
           .select(`
             id,
+            hourly_rate,
+            years_experience,
+            expertise,
+            industry,
             job_title,
             company,
-            expertise,
-            hourly_rate,
             average_rating,
             review_count,
-            years_experience,
-            profiles (
-              first_name,
-              last_name,
-              avatar_url,
-              bio
-            )
-          `)
-          .order('average_rating', { ascending: false })
-          .limit(3);
-
-        if (error) {
-          console.error('Error fetching mentors:', error);
-          return;
+            profiles(first_name, last_name, avatar_url, bio)
+          `);
+        
+        // Apply filters
+        if (selectedIndustry) {
+          query = query.eq('industry', selectedIndustry);
         }
-
-        if (data && data.length > 0) {
-          const transformedMentors = data.map(mentor => ({
-            id: mentor.id,
-            name: `${mentor.profiles?.first_name || ''} ${mentor.profiles?.last_name || ''}`.trim(),
-            title: mentor.job_title || 'Mentor',
-            company: mentor.company || '',
-            expertise: mentor.expertise || [],
-            rating: mentor.average_rating || 4.5,
-            reviewCount: mentor.review_count || 0,
-            hourlyRate: mentor.hourly_rate || 1000,
-            availability: "Check availability",
-            image: mentor.profiles?.avatar_url || 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-            bio: mentor.profiles?.bio || 'Experienced mentor ready to guide you through your journey.'
-          }));
-          setFeaturedMentors(transformedMentors);
+        
+        if (selectedExpertise) {
+          query = query.contains('expertise', [selectedExpertise]);
         }
-      } catch (err) {
-        console.error('Error in fetching mentors:', err);
+        
+        if (selectedRating) {
+          query = query.gte('average_rating', selectedRating);
+        }
+        
+        query = query.gte('hourly_rate', priceRange[0]).lte('hourly_rate', priceRange[1]);
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        const formattedMentors = data.map(mentor => ({
+          id: mentor.id,
+          name: `${mentor.profiles?.first_name || ''} ${mentor.profiles?.last_name || ''}`.trim(),
+          avatarUrl: mentor.profiles?.avatar_url || '/placeholder.svg',
+          title: mentor.job_title || 'Mentor',
+          company: mentor.company || '',
+          hourlyRate: mentor.hourly_rate || 0,
+          expertise: mentor.expertise || [],
+          industry: mentor.industry || '',
+          rating: mentor.average_rating || 4.5,
+          reviewCount: mentor.review_count || 0,
+          bio: mentor.profiles?.bio || '',
+          availabilityCount: 0 // We'll fetch this separately if needed
+        }));
+        
+        setMentors(formattedMentors);
+      } catch (error: any) {
+        console.error('Error fetching mentors:', error);
+        toast({
+          title: "Error loading mentors",
+          description: "Could not load mentor data. Please try again later.",
+          variant: "destructive"
+        });
       } finally {
         setIsLoading(false);
       }
     };
+    
+    fetchMentors();
+  }, [selectedIndustry, selectedExpertise, selectedRating, priceRange]);
 
-    fetchFeaturedMentors();
-  }, []);
+  const handleIndustryChange = (industry: string | null) => {
+    setSelectedIndustry(industry);
+  };
+
+  const handleExpertiseChange = (expertise: string | null) => {
+    setSelectedExpertise(expertise);
+  };
+
+  const handleRatingChange = (rating: number | null) => {
+    setSelectedRating(rating);
+  };
+
+  const handlePriceRangeChange = (range: [number, number]) => {
+    setPriceRange(range);
+  };
+
+  const handleViewProfile = (mentorId: string) => {
+    navigate(`/mentor/${mentorId}`);
+  };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Hero />
-
-      <section className="py-16 bg-gradient-to-b from-white to-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold">How It Works</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Our platform makes it simple to connect with the right expert and
-              accelerate your growth.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Users className="w-10 h-10 text-primary" />,
-                title: "Find Your Expert",
-                description:
-                  "Browse our curated network of industry leaders across business, social impact, legal, and career growth.",
-              },
-              {
-                icon: <Globe className="w-10 h-10 text-primary" />,
-                title: "Book a Session",
-                description:
-                  "Schedule a one-on-one mentorship or join a group session at your convenience.",
-              },
-              {
-                icon: <Lightbulb className="w-10 h-10 text-primary" />,
-                title: "Learn & Implement",
-                description:
-                  "Gain strategic insights and practical advice to apply to your business or career.",
-              },
-              {
-                icon: <Briefcase className="w-10 h-10 text-primary" />,
-                title: "Scale & Grow",
-                description:
-                  "Apply expert guidance to scale your venture or advance your professional journey.",
-              },
-            ].map((step, index) => (
-              <div
-                key={index}
-                className="text-center p-6 rounded-xl hover:bg-white transition-colors hover:shadow-md"
-              >
-                <div className="mx-auto bg-primary/10 w-16 h-16 flex items-center justify-center rounded-full mb-4">
-                  {step.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gradient-to-b from-gray-50 to-blue-50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12">
-            <div>
-              <h2 className="text-3xl font-bold">Find Expert Guidance In</h2>
-              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                Connect with mentors specialized in these key areas to help you
-                achieve your goals
-              </p>
-            </div>
-            <Button
-              to="/mentors"
-              variant="outline"
-              className="mt-4 md:mt-0 group"
-            >
-              View all categories{" "}
-              <ArrowRight
-                size={16}
-                className="ml-2 group-hover:translate-x-1 transition-transform"
-              />
+      
+      <section className="py-16 px-4 bg-gradient-to-b from-slate-50 to-white">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold mb-4 md:mb-0">Find Your Perfect Mentor</h2>
+            <Button onClick={() => navigate('/mentors')} size="lg" className="bg-primary hover:bg-primary/90">
+              View All Mentors
             </Button>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {mentorCategories.map((category, index) => (
-              <div
-                key={index}
-                className="bg-white p-8 rounded-xl text-center shadow-sm border border-gray-100 hover:shadow-md transition-all transform hover:-translate-y-1"
-              >
-                <div className="mx-auto bg-primary/10 w-20 h-20 flex items-center justify-center rounded-full mb-4">
-                  {category.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{category.title}</h3>
-                <p className="text-muted-foreground mb-6">
-                  {category.description}
-                </p>
-                <Button
-                  to="/mentors"
-                  variant="ghost"
-                  className="text-primary group"
-                >
-                  Find a mentor{" "}
-                  <ArrowRight
-                    size={16}
-                    className="ml-2 group-hover:translate-x-1 transition-transform"
-                  />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gradient-to-b from-blue-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-            <div>
-              <h2 className="text-3xl font-bold">Top-Rated Experts</h2>
-              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                Connect with industry-leading mentors for personalized guidance.
-              </p>
-            </div>
-            <Button
-              to="/mentors"
-              variant="ghost"
-              className="mt-4 md:mt-0 group"
-            >
-              Explore all mentors{" "}
-              <ArrowRight
-                size={16}
-                className="ml-2 group-hover:translate-x-1 transition-transform"
-              />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading ? (
-              Array(3).fill(null).map((_, index) => (
-                <div key={index} className="glass-card p-6 animate-pulse">
+          
+          <FilterBar 
+            onIndustryChange={handleIndustryChange}
+            onExpertiseChange={handleExpertiseChange}
+            onRatingChange={handleRatingChange}
+            onPriceRangeChange={handlePriceRangeChange}
+          />
+          
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+              {[1, 2, 3].map((index) => (
+                <div key={index} className="p-6 border rounded-lg shadow-sm animate-pulse">
                   <div className="flex items-start gap-4">
-                    <div className="bg-gray-200 w-16 h-16 rounded-full"></div>
+                    <div className="w-16 h-16 bg-gray-200 rounded-full" />
                     <div className="flex-1">
-                      <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
-                  <div className="mt-4 h-4 bg-gray-200 rounded w-1/4"></div>
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="h-3 bg-gray-200 rounded w-1/4 mt-4" />
+                  <div className="h-8 bg-gray-200 rounded w-full mt-4" />
+                  <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between">
-                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/3" />
+                      <div className="h-4 bg-gray-200 rounded w-1/4" />
                     </div>
-                    <div className="mt-4 flex gap-2">
-                      <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-                      <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                    <div className="flex gap-3 mt-4">
+                      <div className="h-8 bg-gray-200 rounded w-1/2" />
+                      <div className="h-8 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              featuredMentors.map((mentor) => (
-                <MentorCard 
+              ))}
+            </div>
+          ) : mentors.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+              {mentors.slice(0, 6).map((mentor) => (
+                <MentorCard
                   key={mentor.id}
                   id={mentor.id}
                   name={mentor.name}
@@ -357,74 +168,34 @@ const Index: React.FC = () => {
                   rating={mentor.rating}
                   reviewCount={mentor.reviewCount}
                   expertise={mentor.expertise}
-                  industry="Business"
+                  industry={mentor.industry}
                   bio={mentor.bio}
-                  avatarUrl={mentor.image}
+                  avatarUrl={mentor.avatarUrl}
+                  availabilityCount={mentor.availabilityCount}
                 />
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gradient-to-b from-white to-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
-            <div>
-              <h2 className="text-3xl font-bold">Upcoming Group Sessions</h2>
-              <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
-                Join interactive workshops led by industry experts to level up
-                your skills.
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <h3 className="text-xl font-semibold mb-2">No mentors found</h3>
+              <p className="text-muted-foreground mb-4">
+                Try adjusting your filters or check back later
               </p>
             </div>
-            <Button
-              to="/group-sessions"
-              variant="ghost"
-              className="mt-4 md:mt-0 group"
-            >
-              View all sessions{" "}
-              <ArrowRight
-                size={16}
-                className="ml-2 group-hover:translate-x-1 transition-transform"
-              />
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredSessions.map((session) => (
-              <SessionCard key={session.id} session={session} />
-            ))}
-          </div>
+          )}
+          
+          {mentors.length > 6 && (
+            <div className="text-center mt-8">
+              <Button onClick={() => navigate('/mentors')} variant="outline" size="lg">
+                View All Mentors
+              </Button>
+            </div>
+          )}
         </div>
       </section>
-
+      
       <TestimonialSection />
-
-      <section className="py-20 bg-gradient-to-br from-primary to-primary-600 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Transform Your Journey?
-          </h2>
-          <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
-            Join thousands of entrepreneurs and professionals building their
-            future through expert mentorship.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              to="/mentors"
-              className="bg-white text-primary hover:bg-gray-100 px-8 py-3 text-base"
-            >
-              Explore Mentors
-            </Button>
-            <Button
-              to="/group-sessions"
-              className="bg-transparent border border-white hover:bg-white/10 px-8 py-3 text-base"
-            >
-              Browse Group Sessions
-            </Button>
-          </div>
-        </div>
-      </section>
+      <Footer />
     </div>
   );
 };
