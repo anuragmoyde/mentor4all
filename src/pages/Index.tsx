@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Hero from "../components/Hero";
 import MentorCard from "../components/MentorCard";
 import SessionCard from "../components/SessionCard";
 import TestimonialSection from "../components/TestimonialSection";
 import Button from "../components/Button";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowRight,
   Briefcase,
@@ -14,8 +15,7 @@ import {
   Heart,
 } from "lucide-react";
 
-// Updated sample data with Indian names
-const featuredMentors = [
+const initialFeaturedMentors = [
   {
     id: "1",
     name: "Neha Mehta",
@@ -105,7 +105,6 @@ const featuredSessions = [
   },
 ];
 
-// Mentor categories with icons and descriptions
 const mentorCategories = [
   {
     title: "Business & Entrepreneurship",
@@ -128,11 +127,70 @@ const mentorCategories = [
 ];
 
 const Index: React.FC = () => {
+  const [featuredMentors, setFeaturedMentors] = useState(initialFeaturedMentors);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedMentors = async () => {
+      try {
+        setIsLoading(true);
+        
+        const { data, error } = await supabase
+          .from('mentors')
+          .select(`
+            id,
+            job_title,
+            company,
+            expertise,
+            hourly_rate,
+            average_rating,
+            review_count,
+            years_experience,
+            profiles (
+              first_name,
+              last_name,
+              avatar_url,
+              bio
+            )
+          `)
+          .order('average_rating', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          console.error('Error fetching mentors:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const transformedMentors = data.map(mentor => ({
+            id: mentor.id,
+            name: `${mentor.profiles?.first_name || ''} ${mentor.profiles?.last_name || ''}`.trim(),
+            title: mentor.job_title || 'Mentor',
+            company: mentor.company || '',
+            expertise: mentor.expertise || [],
+            rating: mentor.average_rating || 4.5,
+            reviewCount: mentor.review_count || 0,
+            hourlyRate: mentor.hourly_rate || 1000,
+            availability: "Check availability",
+            image: mentor.profiles?.avatar_url || 'https://images.unsplash.com/photo-1607746882042-944635dfe10e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+            bio: mentor.profiles?.bio || ''
+          }));
+          setFeaturedMentors(transformedMentors);
+        }
+      } catch (err) {
+        console.error('Error in fetching mentors:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeaturedMentors();
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Hero />
 
-      {/* How It Works Section - Moved up for better flow */}
       <section className="py-16 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -185,7 +243,6 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Mentor Categories Section - Enhanced design */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-blue-50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12">
@@ -239,7 +296,6 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Mentors Section */}
       <section className="py-16 bg-gradient-to-b from-blue-50 to-white">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
@@ -263,27 +319,51 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredMentors.map((mentor) => (
-              <MentorCard 
-                key={mentor.id}
-                id={mentor.id}
-                name={mentor.name}
-                title={mentor.title}
-                hourlyRate={mentor.hourlyRate}
-                rating={mentor.rating}
-                reviewCount={mentor.reviewCount}
-                expertise={mentor.expertise}
-                industry="Business"
-                bio=""
-                avatarUrl={mentor.image}
-                company={mentor.company}
-              />
-            ))}
+            {isLoading ? (
+              Array(3).fill(null).map((_, index) => (
+                <div key={index} className="glass-card p-6 animate-pulse">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-gray-200 w-16 h-16 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="mt-4 h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                      <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              featuredMentors.map((mentor) => (
+                <MentorCard 
+                  key={mentor.id}
+                  id={mentor.id}
+                  name={mentor.name}
+                  title={mentor.title}
+                  company={mentor.company}
+                  hourlyRate={mentor.hourlyRate}
+                  rating={mentor.rating}
+                  reviewCount={mentor.reviewCount}
+                  expertise={mentor.expertise}
+                  industry="Business"
+                  bio={mentor.bio || ""}
+                  avatarUrl={mentor.image}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>
 
-      {/* Featured Sessions Section */}
       <section className="py-16 bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12">
@@ -315,10 +395,8 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
       <TestimonialSection />
 
-      {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary to-primary-600 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">

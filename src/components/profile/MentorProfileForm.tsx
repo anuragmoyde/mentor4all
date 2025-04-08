@@ -12,6 +12,15 @@ import { toast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { BadgeIndianRupee, Briefcase, Building, Layers, PenLine, Save } from 'lucide-react';
 import { MultiSelect } from '../ui/multi-select';
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 
 interface MentorProfileFormProps {
   onProfileUpdated?: () => void;
@@ -47,7 +56,17 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
   const [isSaving, setIsSaving] = useState(false);
   const [mentorProfile, setMentorProfile] = useState<any>(null);
   
-  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<MentorProfileFormData>();
+  const { register, handleSubmit, setValue, watch, formState: { errors, isDirty } } = useForm<MentorProfileFormData>({
+    defaultValues: {
+      job_title: '',
+      company: '',
+      industry: '',
+      expertise: [],
+      hourly_rate: 500,
+      years_experience: 1,
+      bio: ''
+    }
+  });
   
   const selectedExpertise = watch('expertise', []);
   
@@ -57,23 +76,47 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
       
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
+        // First check if a mentor record already exists
+        const { data: mentorData, error: mentorError } = await supabase
           .from('mentors')
           .select('*')
           .eq('id', user.id)
           .single();
           
-        if (error) throw error;
-        
-        setMentorProfile(data);
-        
-        // Set form values
-        setValue('job_title', data.job_title || '');
-        setValue('company', data.company || '');
-        setValue('industry', data.industry || '');
-        setValue('expertise', data.expertise || []);
-        setValue('hourly_rate', data.hourly_rate || 500);
-        setValue('years_experience', data.years_experience || 1);
+        if (mentorError) {
+          // If no record exists, create one
+          if (mentorError.code === 'PGRST116') {
+            const { data: newMentor, error: createError } = await supabase
+              .from('mentors')
+              .insert({ 
+                id: user.id,
+                hourly_rate: 500,
+                years_experience: 1,
+                expertise: []
+              })
+              .select('*')
+              .single();
+              
+            if (createError) throw createError;
+            
+            setMentorProfile(newMentor);
+            setValue('hourly_rate', newMentor.hourly_rate || 500);
+            setValue('years_experience', newMentor.years_experience || 1);
+            setValue('expertise', newMentor.expertise || []);
+          } else {
+            throw mentorError;
+          }
+        } else {
+          setMentorProfile(mentorData);
+          
+          // Set form values from mentor data
+          setValue('job_title', mentorData.job_title || '');
+          setValue('company', mentorData.company || '');
+          setValue('industry', mentorData.industry || '');
+          setValue('expertise', mentorData.expertise || []);
+          setValue('hourly_rate', mentorData.hourly_rate || 500);
+          setValue('years_experience', mentorData.years_experience || 1);
+        }
         
         // Fetch bio from profile table
         const { data: profileData, error: profileError } = await supabase
@@ -85,11 +128,11 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
         if (!profileError && profileData) {
           setValue('bio', profileData.bio || '');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching mentor profile:', error);
         toast({
           title: "Error loading profile",
-          description: "Could not load your mentor profile information.",
+          description: error.message || "Could not load your mentor profile information.",
           variant: "destructive"
         });
       } finally {
@@ -144,11 +187,11 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
       if (onProfileUpdated) {
         onProfileUpdated();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating mentor profile:', error);
       toast({
         title: "Error updating profile",
-        description: "Could not update your mentor profile. Please try again.",
+        description: error.message || "Could not update your mentor profile. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -241,23 +284,25 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
                 <Layers className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                 Expertise (Select up to 5)
               </Label>
-              <MultiSelect
-                options={expertiseOptions.map(exp => ({ label: exp, value: exp }))}
-                selected={selectedExpertise}
-                onChange={(selected) => {
-                  // Limit to 5 selections
-                  if (selected.length <= 5) {
-                    setValue('expertise', selected, { shouldDirty: true });
-                  } else {
-                    toast({
-                      title: "Maximum 5 expertise",
-                      description: "You can select up to 5 areas of expertise.",
-                      variant: "destructive"
-                    });
-                  }
-                }}
-                placeholder="Select your areas of expertise"
-              />
+              <div className="z-10">
+                <MultiSelect
+                  options={expertiseOptions.map(exp => ({ label: exp, value: exp }))}
+                  selected={selectedExpertise}
+                  onChange={(selected) => {
+                    // Limit to 5 selections
+                    if (selected.length <= 5) {
+                      setValue('expertise', selected, { shouldDirty: true });
+                    } else {
+                      toast({
+                        title: "Maximum 5 expertise",
+                        description: "You can select up to 5 areas of expertise.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  placeholder="Select your areas of expertise"
+                />
+              </div>
               {errors.expertise && (
                 <p className="text-xs text-red-500">{errors.expertise.message}</p>
               )}

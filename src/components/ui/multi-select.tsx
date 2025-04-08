@@ -114,7 +114,7 @@ export function MultiSelect({
           </div>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full p-0 z-50" align="start">
         <Command className="max-h-80">
           <CommandInput 
             placeholder="Search..." 
