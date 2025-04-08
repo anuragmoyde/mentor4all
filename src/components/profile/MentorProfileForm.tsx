@@ -81,32 +81,14 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
           .from('mentors')
           .select('*')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
           
-        if (mentorError) {
-          // If no record exists, create one
-          if (mentorError.code === 'PGRST116') {
-            const { data: newMentor, error: createError } = await supabase
-              .from('mentors')
-              .insert({ 
-                id: user.id,
-                hourly_rate: 500,
-                years_experience: 1,
-                expertise: []
-              })
-              .select('*')
-              .single();
-              
-            if (createError) throw createError;
-            
-            setMentorProfile(newMentor);
-            setValue('hourly_rate', newMentor.hourly_rate || 500);
-            setValue('years_experience', newMentor.years_experience || 1);
-            setValue('expertise', newMentor.expertise || []);
-          } else {
-            throw mentorError;
-          }
-        } else {
+        if (mentorError && mentorError.code !== 'PGRST116') {
+          throw mentorError;
+        }
+        
+        if (mentorData) {
+          // Mentor profile exists, use its data
           setMentorProfile(mentorData);
           
           // Set form values from mentor data
@@ -116,23 +98,47 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
           setValue('expertise', mentorData.expertise || []);
           setValue('hourly_rate', mentorData.hourly_rate || 500);
           setValue('years_experience', mentorData.years_experience || 1);
+        } else {
+          // No mentor profile yet, create one
+          const { data: newMentor, error: createError } = await supabase
+            .from('mentors')
+            .insert({ 
+              id: user.id,
+              hourly_rate: 500,
+              years_experience: 1,
+              expertise: []
+            })
+            .select('*')
+            .single();
+            
+          if (createError) {
+            console.error('Error creating mentor profile:', createError);
+            // Continue without blocking the form - we'll try again on save
+          } else if (newMentor) {
+            setMentorProfile(newMentor);
+            setValue('hourly_rate', newMentor.hourly_rate || 500);
+            setValue('years_experience', newMentor.years_experience || 1);
+            setValue('expertise', newMentor.expertise || []);
+          }
         }
         
         // Fetch bio from profile table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('bio')
-          .eq('id', user.id)
-          .single();
-          
-        if (!profileError && profileData) {
-          setValue('bio', profileData.bio || '');
+        if (user.id) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('bio')
+            .eq('id', user.id)
+            .single();
+            
+          if (!profileError && profileData) {
+            setValue('bio', profileData.bio || '');
+          }
         }
       } catch (error: any) {
         console.error('Error fetching mentor profile:', error);
         toast({
           title: "Error loading profile",
-          description: error.message || "Could not load your mentor profile information.",
+          description: error.message || "Could not load your profile information. You can still continue to edit.",
           variant: "destructive"
         });
       } finally {
@@ -150,20 +156,47 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
     
     setIsSaving(true);
     try {
-      // Update mentor table
-      const { error: mentorError } = await supabase
-        .from('mentors')
-        .update({
-          job_title: data.job_title,
-          company: data.company,
-          industry: data.industry,
-          expertise: data.expertise,
-          hourly_rate: data.hourly_rate,
-          years_experience: data.years_experience
-        })
-        .eq('id', user.id);
+      // Ensure mentor record exists
+      let mentorExists = mentorProfile !== null;
+
+      if (!mentorExists) {
+        // Try to create mentor record first if it doesn't exist
+        const { data: newMentor, error: createError } = await supabase
+          .from('mentors')
+          .insert({ 
+            id: user.id,
+            job_title: data.job_title,
+            company: data.company,
+            industry: data.industry,
+            expertise: data.expertise,
+            hourly_rate: data.hourly_rate,
+            years_experience: data.years_experience
+          })
+          .select('*')
+          .single();
+          
+        if (createError) {
+          throw createError;
+        }
         
-      if (mentorError) throw mentorError;
+        mentorExists = true;
+        setMentorProfile(newMentor);
+      } else {
+        // Update mentor table
+        const { error: mentorError } = await supabase
+          .from('mentors')
+          .update({
+            job_title: data.job_title,
+            company: data.company,
+            industry: data.industry,
+            expertise: data.expertise,
+            hourly_rate: data.hourly_rate,
+            years_experience: data.years_experience
+          })
+          .eq('id', user.id);
+          
+        if (mentorError) throw mentorError;
+      }
       
       // Update bio in profiles table
       const { error: profileError } = await supabase
@@ -279,12 +312,12 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
               )}
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="expertise" className="flex items-center">
                 <Layers className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                 Expertise (Select up to 5)
               </Label>
-              <div className="z-10">
+              <div className="relative">
                 <MultiSelect
                   options={expertiseOptions.map(exp => ({ label: exp, value: exp }))}
                   selected={selectedExpertise}
