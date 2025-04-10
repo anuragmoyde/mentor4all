@@ -1,24 +1,21 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Check, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
-import { motion } from "framer-motion";
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useToast } from '@/hooks/use-toast';
 
-// Export the TimeSlot type
-export type TimeSlot = {
+export type AvailabilitySlot = {
   id: string;
-  mentor_id: string;
   day: string;
-  start_time: string;
-  end_time: string;
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
 };
 
 interface BookingCalendarProps {
@@ -34,40 +31,44 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   hourlyRate,
   onBookingComplete
 }) => {
-  const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
-  const [visibleSlots, setVisibleSlots] = useState<TimeSlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const { user, profile } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [availableSlots, setAvailableSlots] = useState<AvailabilitySlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
+  const [step, setStep] = useState(1);
+  const [sessionTitle, setSessionTitle] = useState("");
+  const [sessionDescription, setSessionDescription] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
-  const [availableDates, setAvailableDates] = useState<Date[]>([]);
-  const [sessionTitle, setSessionTitle] = useState('');
-  const [sessionNotes, setSessionNotes] = useState('');
-  
-  // Fetch available slots for this mentor
+  const { toast } = useToast();
+
   useEffect(() => {
-    const fetchAvailableSlots = async () => {
+    const fetchAvailability = async () => {
       setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('mentor_availability')
           .select('*')
           .eq('mentor_id', mentorId)
-          .gte('day', format(new Date(), 'yyyy-MM-dd'));
-          
+          .eq('is_booked', false)
+          .gte('day', new Date().toISOString().split('T')[0]); // Only fetch future dates
+
         if (error) throw error;
-        
-        const slots = data as TimeSlot[];
-        setAvailableSlots(slots);
-        
-        // Extract unique dates for the calendar
-        const dates = [...new Set(slots.map(slot => slot.day))].map(dateStr => new Date(dateStr));
-        setAvailableDates(dates);
+
+        // Format the data
+        const formattedSlots = data.map(slot => ({
+          id: slot.id,
+          day: slot.day,
+          startTime: slot.start_time.slice(0, 5), // Format time to HH:MM
+          endTime: slot.end_time.slice(0, 5),
+          isBooked: slot.is_booked
+        }));
+
+        setAvailableSlots(formattedSlots);
       } catch (error) {
-        console.error('Error fetching availability:', error);
+        console.error('Error fetching mentor availability:', error);
         toast({
-          title: "Error fetching availability",
+          title: "Error loading availability",
           description: "Could not load mentor's available time slots.",
           variant: "destructive"
         });
@@ -75,82 +76,104 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         setIsLoading(false);
       }
     };
-    
-    fetchAvailableSlots();
-  }, [mentorId]);
 
-  // Filter slots when date is selected
-  useEffect(() => {
-    if (selectedDate) {
-      const dateString = format(selectedDate, 'yyyy-MM-dd');
-      const filtered = availableSlots.filter(slot => slot.day === dateString);
-      setVisibleSlots(filtered);
-    } else {
-      setVisibleSlots([]);
+    if (mentorId) {
+      fetchAvailability();
     }
-    
-    // Clear selected slot when date changes
-    setSelectedSlot(null);
-  }, [selectedDate, availableSlots]);
+  }, [mentorId, toast]);
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
+  const getSlotsForDate = (date: Date | undefined) => {
+    if (!date) return [];
+    const formattedDate = format(date, 'yyyy-MM-dd');
+    return availableSlots.filter(slot => slot.day === formattedDate);
   };
 
-  const bookSession = async () => {
-    if (!selectedSlot || !user || !sessionTitle) {
+  const handleSlotSelect = (slot: AvailabilitySlot) => {
+    setSelectedSlot(slot);
+  };
+
+  const moveToSessionDetails = () => {
+    if (!selectedSlot) {
       toast({
-        title: "Incomplete information",
-        description: "Please select a time slot and provide a session title.",
+        title: "No time slot selected",
+        description: "Please select a time slot to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleBookSession = async () => {
+    if (!user || !profile) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to book a session.",
         variant: "destructive"
       });
       return;
     }
-    
+
+    if (!selectedSlot) {
+      toast({
+        title: "No time slot selected",
+        description: "Please select a time slot for your session.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!sessionTitle.trim()) {
+      toast({
+        title: "Session title required",
+        description: "Please provide a title for your session.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsBooking(true);
+
     try {
-      // Calculate duration in minutes between start and end time
-      const startParts = selectedSlot.start_time.split(':').map(Number);
-      const endParts = selectedSlot.end_time.split(':').map(Number);
-      const startMinutes = startParts[0] * 60 + startParts[1];
-      const endMinutes = endParts[0] * 60 + endParts[1];
-      const durationMinutes = endMinutes - startMinutes;
-      
-      // Construct the date_time by combining day and start_time
-      const sessionDateTime = `${selectedSlot.day}T${selectedSlot.start_time}:00`;
-      
-      // Insert the session
-      const { data, error } = await supabase
+      // Calculate session price based on hourly rate and duration
+      const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
+      const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
+      const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
+      const sessionPrice = (hourlyRate / 60) * durationMinutes;
+
+      // Create the session
+      const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: sessionDateTime,
+          date_time: `${selectedSlot.day}T${selectedSlot.startTime}`,
           duration: durationMinutes,
-          price: hourlyRate * (durationMinutes / 60),
+          price: sessionPrice,
           title: sessionTitle,
-          description: sessionNotes,
+          description: sessionDescription,
           status: 'scheduled',
           payment_status: 'pending'
         })
         .select()
         .single();
-      
-      if (error) throw error;
-      
-      // Remove the slot from availability
-      const { error: deleteError } = await supabase
+
+      if (sessionError) throw sessionError;
+
+      // Mark availability slot as booked
+      const { error: slotError } = await supabase
         .from('mentor_availability')
-        .delete()
+        .update({ is_booked: true })
         .eq('id', selectedSlot.id);
-      
-      if (deleteError) throw deleteError;
-      
+
+      if (slotError) throw slotError;
+
       toast({
         title: "Session booked successfully!",
-        description: `Your session with ${mentorName} has been scheduled.`,
+        description: `Your session with ${mentorName} is scheduled for ${format(new Date(selectedSlot.day), 'MMMM d, yyyy')} at ${selectedSlot.startTime}.`,
       });
-      
+
+      // If there's a callback for booking completion, call it
       if (onBookingComplete) {
         onBookingComplete();
       }
@@ -165,253 +188,114 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       setIsBooking(false);
     }
   };
-  
-  // Custom day rendering to highlight days with availability
-  const isDayWithSlots = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    return availableSlots.some(slot => slot.day === dateString);
-  };
+
+  const renderTimeSlotStep = () => (
+    <div>
+      <div className="space-y-4">
+        <p>Select a date:</p>
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={setSelectedDate}
+        />
+        {selectedDate && (
+          <div>
+            <p>Available Time Slots:</p>
+            {getSlotsForDate(selectedDate).map((slot) => (
+              <Button
+                key={slot.id}
+                variant={selectedSlot?.id === slot.id ? "default" : "outline"}
+                onClick={() => handleSlotSelect(slot)}
+              >
+                {slot.startTime} - {slot.endTime}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedSlot && (
+        <div className="mt-6 flex justify-end">
+          <Button onClick={moveToSessionDetails}>
+            Continue to Session Details
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSessionDetailsStep = () => (
+    <div className="space-y-6">
+      <div className="bg-blue-50 p-4 rounded-lg flex items-start gap-3">
+        <CalendarIcon className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-blue-700">Selected Time Slot</p>
+          <p className="text-sm text-blue-600">
+            {selectedSlot && (
+              <>
+                {format(new Date(selectedSlot.day), "MMMM d, yyyy")} at {selectedSlot.startTime} - {selectedSlot.endTime}
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="sessionTitle" className="text-base">
+          Session Title <span className="text-red-500">*</span>
+        </Label>
+        <p className="text-sm text-muted-foreground mb-2">
+          Provide a title that describes what you want to discuss in this session
+        </p>
+        <Input
+          id="sessionTitle"
+          value={sessionTitle}
+          onChange={(e) => setSessionTitle(e.target.value)}
+          placeholder="e.g., Career transition advice, Startup funding guidance"
+          className="mt-1"
+          required
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="sessionDescription" className="text-base">
+          What would you like to discuss?
+        </Label>
+        <p className="text-sm text-muted-foreground mb-2">
+          Share some details about what you'd like to get from this mentoring session
+        </p>
+        <Textarea
+          id="sessionDescription"
+          value={sessionDescription}
+          onChange={(e) => setSessionDescription(e.target.value)}
+          placeholder="e.g., I'm looking for advice on transitioning from a technical role to a product management position. I'd like to discuss the key skills needed and how to position my experience."
+          className="mt-1 min-h-32"
+        />
+      </div>
+
+      <div className="flex justify-between pt-4">
+        <Button type="button" variant="outline" onClick={() => setStep(1)}>
+          Back to Time Selection
+        </Button>
+        <Button 
+          onClick={handleBookSession} 
+          disabled={isBooking || !sessionTitle.trim()}
+        >
+          {isBooking ? "Booking..." : "Book Session"}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
-    <Card className="border-2">
-      <CardHeader>
-        <CardTitle className="text-xl flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-primary" />
-          Book a Session with {mentorName}
-        </CardTitle>
-        <CardDescription>
-          Select from available time slots to schedule your mentorship session.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="calendar">
-          <TabsList className="w-full mb-6">
-            <TabsTrigger value="calendar" className="flex-1">Calendar View</TabsTrigger>
-            <TabsTrigger value="session" className="flex-1">Session Details</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="calendar">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                {isLoading ? (
-                  <Skeleton className="h-[350px] w-full rounded-md" />
-                ) : (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium mb-2">1. Select a date with availability</p>
-                    <Calendar 
-                      mode="single" 
-                      selected={selectedDate} 
-                      onSelect={handleDateSelect}
-                      className="rounded-md border shadow-sm pointer-events-auto"
-                      modifiers={{
-                        available: (date) => isDayWithSlots(date),
-                      }}
-                      modifiersClassNames={{
-                        available: "border-2 border-primary bg-primary/10",
-                      }}
-                      disabled={(date) => {
-                        return !isDayWithSlots(date) || date < new Date();
-                      }}
-                      fromDate={new Date()}
-                    />
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <p className="text-sm font-medium mb-2 flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  2. Choose an available time slot
-                </p>
-                
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3].map(i => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
-                  </div>
-                ) : selectedDate ? (
-                  visibleSlots.length > 0 ? (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                      {visibleSlots.map((slot) => (
-                        <motion.div
-                          key={slot.id}
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className={`flex justify-between items-center p-4 rounded-md border-2 cursor-pointer transition-all ${
-                            selectedSlot?.id === slot.id 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-slate-200 hover:border-primary/50'
-                          }`}
-                          onClick={() => setSelectedSlot(slot)}
-                        >
-                          <div className="flex items-center gap-3">
-                            {selectedSlot?.id === slot.id && (
-                              <Check className="h-5 w-5 text-primary" />
-                            )}
-                            <div>
-                              <p className="font-medium">{slot.start_time} - {slot.end_time}</p>
-                              <p className="text-sm text-slate-600">
-                                {(() => {
-                                  // Calculate duration
-                                  const startParts = slot.start_time.split(':').map(Number);
-                                  const endParts = slot.end_time.split(':').map(Number);
-                                  const startMinutes = startParts[0] * 60 + startParts[1];
-                                  const endMinutes = endParts[0] * 60 + endParts[1];
-                                  const durationMinutes = endMinutes - startMinutes;
-                                  const hours = Math.floor(durationMinutes / 60);
-                                  const minutes = durationMinutes % 60;
-                                  
-                                  return `${hours > 0 ? `${hours}h` : ''} ${minutes > 0 ? `${minutes}m` : ''}`;
-                                })()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-primary">
-                              ₹{(() => {
-                                // Calculate price based on duration
-                                const startParts = slot.start_time.split(':').map(Number);
-                                const endParts = slot.end_time.split(':').map(Number);
-                                const startMinutes = startParts[0] * 60 + startParts[1];
-                                const endMinutes = endParts[0] * 60 + endParts[1];
-                                const durationMinutes = endMinutes - startMinutes;
-                                const durationHours = durationMinutes / 60;
-                                
-                                return Math.round(hourlyRate * durationHours);
-                              })()}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center p-8 rounded-md border border-dashed border-slate-200">
-                      <p className="text-muted-foreground">No time slots available for this date</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Please select a different date
-                      </p>
-                    </div>
-                  )
-                ) : (
-                  <div className="text-center p-8 rounded-md border border-dashed border-slate-200">
-                    <p className="text-muted-foreground">Select a date to see available time slots</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Dates with availability are highlighted on the calendar
-                    </p>
-                  </div>
-                )}
-                
-                {selectedSlot && (
-                  <div className="mt-4">
-                    <Button 
-                      className="w-full"
-                      onClick={() => document.getElementById('session-tab')?.click()}
-                    >
-                      Continue to Session Details
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="session" id="session-tab">
-            <div className="space-y-4">
-              {selectedSlot ? (
-                <>
-                  <div className="p-4 bg-slate-50 rounded-md border">
-                    <h3 className="font-medium mb-2">Selected Time Slot</h3>
-                    <p className="text-sm">
-                      {format(new Date(selectedSlot.day), "EEEE, MMMM d, yyyy")}
-                    </p>
-                    <p className="text-sm font-medium">
-                      {selectedSlot.start_time} - {selectedSlot.end_time}
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="sessionTitle" className="block text-sm font-medium mb-1">
-                      Session Title *
-                    </label>
-                    <input
-                      id="sessionTitle"
-                      type="text"
-                      className="w-full p-2 border rounded-md"
-                      placeholder="e.g., Career Guidance Session"
-                      value={sessionTitle}
-                      onChange={(e) => setSessionTitle(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="sessionNotes" className="block text-sm font-medium mb-1">
-                      Session Notes (optional)
-                    </label>
-                    <textarea
-                      id="sessionNotes"
-                      className="w-full p-2 border rounded-md min-h-[100px]"
-                      placeholder="Topics you'd like to discuss..."
-                      value={sessionNotes}
-                      onChange={(e) => setSessionNotes(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="p-4 bg-slate-50 rounded-md border">
-                    <div className="flex justify-between mb-2">
-                      <span>Session Fee</span>
-                      <span className="font-semibold">
-                        ₹{(() => {
-                          // Calculate price based on duration
-                          const startParts = selectedSlot.start_time.split(':').map(Number);
-                          const endParts = selectedSlot.end_time.split(':').map(Number);
-                          const startMinutes = startParts[0] * 60 + startParts[1];
-                          const endMinutes = endParts[0] * 60 + endParts[1];
-                          const durationMinutes = endMinutes - startMinutes;
-                          const durationHours = durationMinutes / 60;
-                          
-                          return Math.round(hourlyRate * durationHours);
-                        })()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      Payment will be collected after session confirmation.
-                    </p>
-                  </div>
-                  
-                  <div className="flex justify-end gap-3 pt-2">
-                    <Button 
-                      variant="outline"
-                      onClick={() => document.getElementById('calendar-tab')?.click()}
-                    >
-                      Back
-                    </Button>
-                    <Button 
-                      onClick={bookSession}
-                      disabled={isBooking || !sessionTitle}
-                    >
-                      {isBooking ? 'Booking...' : 'Book Session'}
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center p-8 rounded-md border border-dashed border-slate-200">
-                  <p className="text-muted-foreground">No time slot selected</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => document.getElementById('calendar-tab')?.click()}
-                  >
-                    Go Back to Calendar
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 mb-2">
+        <CalendarIcon className="h-5 w-5 text-primary" />
+        <h2 className="text-xl font-bold">Book a Session with {mentorName}</h2>
+      </div>
+      
+      {step === 1 ? renderTimeSlotStep() : renderSessionDetailsStep()}
+    </div>
   );
 };
 

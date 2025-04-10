@@ -10,6 +10,8 @@ interface SessionData {
   date_time: string;
   duration: number;
   price: number;
+  description?: string;
+  status?: string;
   mentors?: {
     profiles: {
       first_name: string;
@@ -82,6 +84,9 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
             dateTime={session.date_time}
             duration={session.duration}
             price={session.price}
+            description={session.description}
+            status={session.status}
+            isMentor={isMentor}
           />
         );
       })}

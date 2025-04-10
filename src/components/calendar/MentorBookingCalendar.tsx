@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Clock, Check, Info } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Check, Info, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { toast } from '@/hooks/use-toast';
@@ -99,6 +99,17 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
     setSelectedSlot(slot);
+  };
+
+  const moveToSessionDetails = () => {
+    if (!selectedSlot) {
+      toast({
+        title: "No time slot selected",
+        description: "Please select a time slot to continue",
+        variant: "destructive",
+      });
+      return;
+    }
     setCurrentStep(2);
   };
 
@@ -256,7 +267,7 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
                     transition={{ duration: 0.2, delay: index * 0.05 }}
                   >
                     <Button
-                      variant="outline"
+                      variant={selectedSlot?.id === slot.id ? "default" : "outline"}
                       className="w-full justify-between p-3 h-auto"
                       onClick={() => handleSlotSelect(slot)}
                     >
@@ -272,7 +283,7 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
                           })()}
                         </span>
                       </span>
-                      <Check className="h-4 w-4 opacity-0 group-hover:opacity-100" />
+                      {selectedSlot?.id === slot.id && <Check className="h-4 w-4" />}
                     </Button>
                   </motion.div>
                 ))}
@@ -291,6 +302,15 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
           </div>
         )}
       </div>
+      
+      {selectedSlot && (
+        <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
+          <Button onClick={moveToSessionDetails}>
+            Continue to Session Details
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 
@@ -349,7 +369,6 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
           variant="outline" 
           onClick={() => {
             setCurrentStep(1);
-            setSelectedSlot(null);
           }}
         >
           Back to Time Slots
