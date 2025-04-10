@@ -21,8 +21,8 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
-  options,
-  selected,
+  options = [], // Provide a default empty array to prevent null/undefined issues
+  selected = [], // Provide a default empty array to prevent null/undefined issues
   onChange,
   className,
   placeholder = "Select options",
@@ -32,15 +32,20 @@ export function MultiSelect({
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Ensure options is always an array, even if null/undefined is passed
+  const safeOptions = Array.isArray(options) ? options : [];
+  // Ensure selected is always an array, even if null/undefined is passed
+  const safeSelected = Array.isArray(selected) ? selected : [];
+
   // Filter options based on search query
-  const filteredOptions = options?.filter((option) => 
+  const filteredOptions = safeOptions.filter((option) => 
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  );
 
   // Toggle selection of an option
   const toggleOption = (value: string) => {
-    const currentIndex = selected.indexOf(value);
-    const newSelected = [...selected];
+    const currentIndex = safeSelected.indexOf(value);
+    const newSelected = [...safeSelected];
     
     if (currentIndex === -1) {
       newSelected.push(value);
@@ -54,7 +59,7 @@ export function MultiSelect({
   // Remove an option
   const removeOption = (e: React.MouseEvent, value: string) => {
     e.stopPropagation();
-    onChange(selected.filter((s) => s !== value));
+    onChange(safeSelected.filter((s) => s !== value));
   };
 
   // Clear all selected options
@@ -80,11 +85,11 @@ export function MultiSelect({
           )}
         >
           <div className="flex flex-wrap gap-1 w-full">
-            {selected.length > 0 ? (
+            {safeSelected.length > 0 ? (
               <>
-                {selected.map((value) => (
+                {safeSelected.map((value) => (
                   <Badge key={value} variant="secondary" className="mr-1 mb-1">
-                    {options?.find(opt => opt.value === value)?.label || value}
+                    {safeOptions.find(opt => opt.value === value)?.label || value}
                     <button
                       className="ml-1 ring-offset-background hover:bg-muted outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onMouseDown={(e) => e.preventDefault()}
@@ -95,7 +100,7 @@ export function MultiSelect({
                   </Badge>
                 ))}
                 <div className="flex-1">
-                  {!open && selected.length > 0 && (
+                  {!open && safeSelected.length > 0 && (
                     <button
                       className="px-1 text-xs text-muted-foreground"
                       onClick={clearOptions}
@@ -125,7 +130,7 @@ export function MultiSelect({
           <CommandEmpty>{emptyText}</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {filteredOptions.map((option) => {
-              const isSelected = selected.includes(option.value);
+              const isSelected = safeSelected.includes(option.value);
               return (
                 <CommandItem
                   key={option.value}

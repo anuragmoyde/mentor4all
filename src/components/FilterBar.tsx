@@ -35,7 +35,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const [ratingFilter, setRatingFilter] = useState<string[]>([]);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
   
-  // Define filter options
+  // Define filter options - ensure this is never null/undefined
   const filters = {
     industry: {
       label: "Industry",
