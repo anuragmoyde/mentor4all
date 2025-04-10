@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,6 @@ import Hero from "@/components/Hero";
 import TestimonialSection from "@/components/TestimonialSection";
 import MentorCard from "@/components/MentorCard";
 import FilterBar from "@/components/FilterBar";
-import Footer from "@/components/Footer";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -195,7 +193,6 @@ const Index = () => {
       </section>
       
       <TestimonialSection />
-      <Footer />
     </div>
   );
 };
