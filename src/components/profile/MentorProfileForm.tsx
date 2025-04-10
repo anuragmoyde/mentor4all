@@ -98,6 +98,28 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
           setValue('expertise', mentorData.expertise || []);
           setValue('hourly_rate', mentorData.hourly_rate || 500);
           setValue('years_experience', mentorData.years_experience || 1);
+        } else {
+          // No mentor profile yet, create one
+          const { data: newMentor, error: createError } = await supabase
+            .from('mentors')
+            .insert({ 
+              id: user.id,
+              hourly_rate: 500,
+              years_experience: 1,
+              expertise: []
+            })
+            .select('*')
+            .single();
+            
+          if (createError) {
+            console.error('Error creating mentor profile:', createError);
+            // Continue without blocking the form - we'll try again on save
+          } else if (newMentor) {
+            setMentorProfile(newMentor);
+            setValue('hourly_rate', newMentor.hourly_rate || 500);
+            setValue('years_experience', newMentor.years_experience || 1);
+            setValue('expertise', newMentor.expertise || []);
+          }
         }
         
         // Fetch bio from profile table
@@ -134,11 +156,11 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
     
     setIsSaving(true);
     try {
-      // Check if mentor profile exists
+      // Ensure mentor record exists
       let mentorExists = mentorProfile !== null;
 
       if (!mentorExists) {
-        // Create mentor record if it doesn't exist
+        // Try to create mentor record first if it doesn't exist
         const { data: newMentor, error: createError } = await supabase
           .from('mentors')
           .insert({ 
@@ -157,6 +179,7 @@ const MentorProfileForm: React.FC<MentorProfileFormProps> = ({ onProfileUpdated 
           throw createError;
         }
         
+        mentorExists = true;
         setMentorProfile(newMentor);
       } else {
         // Update mentor table

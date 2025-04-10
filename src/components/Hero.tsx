@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import Button from './Button';
 
 const Hero: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -45,11 +44,11 @@ const Hero: React.FC = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link to="/mentors">Explore Mentors</Link>
+          <Button to="/mentors" variant="primary" size="lg" className="w-full sm:w-auto">
+            Explore Mentors
           </Button>
-          <Button asChild variant="outline" size="lg" className="w-full sm:w-auto bg-white/70 hover:bg-white">
-            <Link to="/group-sessions">Browse Group Sessions</Link>
+          <Button to="/group-sessions" variant="outline" size="lg" className="w-full sm:w-auto bg-white/70 hover:bg-white">
+            Browse Group Sessions
           </Button>
         </div>
         
