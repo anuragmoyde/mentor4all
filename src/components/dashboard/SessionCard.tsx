@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
   status = 'scheduled',
   isMentor = false,
 }) => {
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const formattedDate = format(parseISO(dateTime), 'EEEE, MMMM do');
   const formattedTime = format(parseISO(dateTime), 'h:mm a');
   const durationInHours = duration / 60;
@@ -96,11 +97,14 @@ const SessionCard: React.FC<SessionCardProps> = ({
         </div>
         
         {description && (
-          <Collapsible className="mt-3">
+          <Collapsible className="mt-3" open={isNotesOpen} onOpenChange={setIsNotesOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="p-0 h-auto flex items-center hover:bg-transparent">
                 <MessageCircle className="h-4 w-4 mr-1 text-muted-foreground" />
-                <span className="text-sm underline">Session notes</span>
+                <span className="text-sm underline">
+                  {isMentor ? "Mentee's notes" : "Session notes"}
+                </span>
+                <span className={`ml-1 text-xs ${isNotesOpen ? "rotate-180" : ""} transition-transform`}>▼</span>
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-2 text-sm text-muted-foreground bg-slate-50 p-3 rounded-md">

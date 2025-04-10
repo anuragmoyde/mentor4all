@@ -11,6 +11,7 @@ import MentorDetailView from '@/components/mentors/MentorDetailView';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface MentorData {
   id: string;
@@ -38,7 +39,8 @@ const MentorDirectory = () => {
   const [availableExpertise, setAvailableExpertise] = useState<string[]>([]);
   const [availableIndustries, setAvailableIndustries] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedMentorId, setSelectedMentorId] = useState<string | null>(null);
+  const { mentorId } = useParams();
+  const navigate = useNavigate();
 
   const { data: mentors, isLoading } = useQuery({
     queryKey: ['mentors'],
@@ -130,19 +132,18 @@ const MentorDirectory = () => {
     setSelectedIndustries([]);
   };
 
-  const handleMentorSelect = (mentorId: string) => {
-    setSelectedMentorId(mentorId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleMentorSelect = (id: string) => {
+    navigate(`/mentors/${id}`);
   };
 
   const handleBackToMentors = () => {
-    setSelectedMentorId(null);
+    navigate('/mentors');
   };
 
-  if (selectedMentorId) {
+  if (mentorId) {
     return (
       <div className="container mx-auto py-12 px-4">
-        <MentorDetailView mentorId={selectedMentorId} onBack={handleBackToMentors} />
+        <MentorDetailView mentorId={mentorId} onBack={handleBackToMentors} />
       </div>
     );
   }

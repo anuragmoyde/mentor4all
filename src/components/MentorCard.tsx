@@ -45,6 +45,15 @@ const MentorCard: React.FC<MentorCardProps> = ({
     navigate(`/mentors/${id}`);
   };
 
+  // Function to determine rating color
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4.5) return "text-green-500";
+    if (rating >= 4.0) return "text-lime-500";
+    if (rating >= 3.5) return "text-yellow-500";
+    if (rating >= 3.0) return "text-amber-500";
+    return "text-orange-500";
+  };
+
   return (
     <div 
       className={cn(
@@ -73,8 +82,8 @@ const MentorCard: React.FC<MentorCardProps> = ({
       </div>
       
       <div className="flex items-center mt-3">
-        <div className="flex text-amber-400">
-          <Star size={16} fill="currentColor" className="text-amber-400" />
+        <div className="flex">
+          <Star size={16} fill="currentColor" className={getRatingColor(rating)} />
           <span className="ml-1 text-sm font-medium">{rating.toFixed(1)}</span>
         </div>
         <span className="mx-1 text-gray-300">·</span>

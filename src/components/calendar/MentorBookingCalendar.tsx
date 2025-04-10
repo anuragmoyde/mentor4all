@@ -228,12 +228,15 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
             mode="single" 
             selected={selectedDate} 
             onSelect={setSelectedDate}
-            className="rounded-md border shadow-sm"
+            className="rounded-md border shadow-sm pointer-events-auto"
             modifiers={{
               available: (date) => isDayWithSlots(date),
             }}
-            modifiersClassNames={{
-              available: "border-2 border-primary bg-primary/10",
+            modifiersStyles={{
+              available: { 
+                backgroundColor: "rgba(52, 211, 153, 0.1)",
+                border: "2px solid rgba(52, 211, 153, 0.5)" 
+              }
             }}
             disabled={(date) => 
               date < new Date() || // Past dates

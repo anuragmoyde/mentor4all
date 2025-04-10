@@ -37,6 +37,7 @@ const App = () => (
                 <Route path="/mentor-dashboard" element={<MentorDashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/mentors" element={<MentorDirectory />} />
+                <Route path="/mentors/:mentorId" element={<MentorDirectory />} />
                 <Route path="/group-sessions" element={<GroupSessions />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
