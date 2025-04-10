@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,15 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('general');
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check if the location state contains an activeTab
+    const locationState = location.state as { activeTab?: string } | null;
+    if (locationState?.activeTab) {
+      setActiveTab(locationState.activeTab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (!isLoading && !user) {

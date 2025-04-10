@@ -17,7 +17,8 @@ import {
   Loader2, 
   TagIcon, 
   Verified, 
-  XCircle
+  XCircle,
+  FileText
 } from 'lucide-react';
 import { 
   Select,
@@ -67,6 +68,7 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
   const [mentorProfile, setMentorProfile] = useState<MentorProfile | null>(null);
   const [expertiseTags, setExpertiseTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [profileBio, setProfileBio] = useState<string>('');
   
   // Form fields
   const [hourlyRate, setHourlyRate] = useState<number | undefined>(undefined);
@@ -78,10 +80,13 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
   // Required fields tracking
   const [missingFields, setMissingFields] = useState<string[]>([]);
 
-  // Fetch existing mentor profile
+  // Fetch existing mentor profile and user profile
   useEffect(() => {
-    const fetchMentorProfile = async () => {
+    const fetchProfiles = async () => {
       try {
+        setIsLoading(true);
+        
+        // Fetch mentor profile
         const { data: mentorData, error: mentorError } = await supabase
           .from('mentors')
           .select('*')
@@ -93,6 +98,17 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
           console.error('Error fetching mentor profile:', mentorError);
         }
         
+        // Fetch user profile for bio
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('bio')
+          .eq('id', userId)
+          .single();
+          
+        if (userError) {
+          console.error('Error fetching user profile:', userError);
+        }
+        
         if (mentorData) {
           setMentorProfile(mentorData);
           setHourlyRate(mentorData.hourly_rate);
@@ -102,6 +118,10 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
           setCompany(mentorData.company);
           setJobTitle(mentorData.job_title);
         }
+        
+        if (userData) {
+          setProfileBio(userData.bio || '');
+        }
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -110,7 +130,7 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
     };
     
     if (userId) {
-      fetchMentorProfile();
+      fetchProfiles();
     }
   }, [userId]);
 
@@ -124,9 +144,10 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
     if (expertiseTags.length === 0) missing.push('Areas of Expertise');
     if (!company) missing.push('Company');
     if (!jobTitle) missing.push('Job Title');
+    if (!profileBio) missing.push('Bio');
     
     setMissingFields(missing);
-  }, [hourlyRate, yearsExperience, industry, expertiseTags, company, jobTitle]);
+  }, [hourlyRate, yearsExperience, industry, expertiseTags, company, jobTitle, profileBio]);
 
   const handleAddTag = () => {
     if (newTag.trim() && !expertiseTags.includes(newTag.trim())) {
@@ -151,6 +172,14 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
 
     setIsSaving(true);
     try {
+      // Update user profile bio
+      const { error: bioError } = await supabase
+        .from('profiles')
+        .update({ bio: profileBio })
+        .eq('id', userId);
+        
+      if (bioError) throw bioError;
+      
       // If mentor profile exists, update it
       if (mentorProfile) {
         const { error } = await supabase
@@ -314,6 +343,22 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
         </div>
         
         <div>
+          <Label htmlFor="bio" className="flex items-center gap-2 mb-2">
+            <FileText className="h-4 w-4" /> Bio <span className="text-red-500">*</span>
+          </Label>
+          <Textarea
+            id="bio"
+            value={profileBio}
+            onChange={(e) => setProfileBio(e.target.value)}
+            placeholder="Share information about your experience, background, and what you can offer to mentees..."
+            className="bg-slate-50/50 transition-all focus:bg-white min-h-[120px]"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Tell potential mentees about your professional journey, expertise, and what they can expect from your mentorship.
+          </p>
+        </div>
+        
+        <div>
           <Label className="flex items-center gap-2 mb-2">
             <TagIcon className="h-4 w-4" /> Areas of Expertise <span className="text-red-500">*</span>
           </Label>
@@ -377,7 +422,8 @@ const MentorProfileCompleteCard: React.FC<MentorProfileCompleteCardProps> = ({ u
               { name: 'Industry', value: industry },
               { name: 'Areas of Expertise', value: expertiseTags.length > 0 },
               { name: 'Company', value: company },
-              { name: 'Job Title', value: jobTitle }
+              { name: 'Job Title', value: jobTitle },
+              { name: 'Bio', value: profileBio && profileBio.length > 0 }
             ].map((field) => (
               <div 
                 key={field.name} 

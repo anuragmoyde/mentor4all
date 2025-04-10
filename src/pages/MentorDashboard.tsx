@@ -10,6 +10,8 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import StatCards, { StatCardProps } from '@/components/dashboard/StatCards';
 import SessionsTabs from '@/components/dashboard/SessionsTabs';
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
+import { Button } from '@/components/ui/button';
+import { CalendarClock } from 'lucide-react';
 
 const MentorDashboard = () => {
   const { user, profile, isLoading } = useAuth();
@@ -107,6 +109,11 @@ const MentorDashboard = () => {
     enabled: !!user && profile?.user_type === 'mentor',
   });
 
+  // Handler for Set Availability button
+  const handleSetAvailability = () => {
+    navigate('/profile', { state: { activeTab: 'mentor' } });
+  };
+
   if (isLoading || !user || !profile) {
     return (
       <div className="container mx-auto py-16 flex justify-center">
@@ -158,12 +165,22 @@ const MentorDashboard = () => {
 
   return (
     <div className="container mx-auto py-12 px-4 md:px-6">
-      <DashboardHeader 
-        title="Mentor Dashboard" 
-        subtitle="Welcome back,"
-        userFirstName={profile?.first_name}
-        showAvailabilityButton={true}
-      />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <DashboardHeader 
+          title="Mentor Dashboard" 
+          subtitle="Welcome back,"
+          userFirstName={profile?.first_name}
+          showAvailabilityButton={false}
+        />
+        
+        <Button 
+          onClick={handleSetAvailability}
+          className="flex items-center gap-2 md:self-end"
+        >
+          <CalendarClock className="h-4 w-4" />
+          Set Availability
+        </Button>
+      </div>
 
       {dashboardLoading ? (
         <DashboardSkeleton />

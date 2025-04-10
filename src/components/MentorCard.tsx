@@ -4,6 +4,7 @@ import { Star, Clock, Calendar, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import BookingCalendar from './calendar/BookingCalendar';
 
 interface MentorCardProps {
@@ -38,6 +39,11 @@ const MentorCard: React.FC<MentorCardProps> = ({
   className 
 }) => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleViewProfile = () => {
+    navigate(`/mentors/${id}`);
+  };
 
   return (
     <div 
@@ -112,7 +118,12 @@ const MentorCard: React.FC<MentorCardProps> = ({
                 Book Session
               </Button>
             </DialogTrigger>
-            <Button variant="default" size="sm" className="flex-1">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1"
+              onClick={handleViewProfile}
+            >
               View Profile
             </Button>
           </div>
