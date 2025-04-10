@@ -35,8 +35,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
     navigate('/');
   };
 
-  const userTypeIcon = userType === 'mentor' ? Shield : User;
-
+  // Instead of setting userTypeIcon as a component reference, 
+  // we'll conditionally render the appropriate icon component directly in JSX
+  
   return (
     <motion.div 
       className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-100 to-white p-6 mb-10 shadow-sm border border-slate-100"
@@ -67,7 +68,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                        "bg-secondary/10 text-secondary hover:bg-secondary/20"
               )}
             >
-              <userTypeIcon className="h-3 w-3 mr-1" />
+              {userType === 'mentor' ? <Shield className="h-3 w-3 mr-1" /> : <User className="h-3 w-3 mr-1" />}
               {userType === 'mentor' ? 'Mentor' : 'Mentee'}
             </Badge>
           </div>
