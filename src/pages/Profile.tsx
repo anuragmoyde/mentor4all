@@ -9,7 +9,6 @@ import ProfilePictureCard from '@/components/profile/ProfilePictureCard';
 import AccountTypeSection from '@/components/profile/AccountTypeSection';
 import MentorProfileCompleteCard from '@/components/profile/MentorProfileCompleteCard';
 import MentorAvailabilitySection from '@/components/profile/MentorAvailabilitySection';
-import MentorProfileForm from '@/components/profile/MentorProfileForm';
 import { motion } from 'framer-motion';
 
 const Profile = () => {
@@ -24,17 +23,13 @@ const Profile = () => {
     }
   }, [user, isLoading, navigate]);
 
-  const handleMentorProfileComplete = () => {
-    toast({
-      title: "Profile updated successfully",
-      description: "Your mentor profile has been updated.",
-    });
-  };
-
   if (isLoading) {
     return (
       <div className="container mx-auto py-12 px-4 h-screen flex justify-center items-center">
-        <div className="animate-pulse">Loading profile...</div>
+        <div className="animate-pulse flex items-center gap-2">
+          <div className="h-4 w-4 bg-primary rounded-full animate-bounce"></div>
+          <span className="text-lg font-medium">Loading profile...</span>
+        </div>
       </div>
     );
   }
@@ -45,7 +40,7 @@ const Profile = () => {
 
   return (
     <motion.div 
-      className="container mx-auto py-12 px-4"
+      className="container mx-auto py-12 px-4 max-w-7xl"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -59,9 +54,15 @@ const Profile = () => {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-8">
-        <TabsList className="grid w-full md:w-[400px] grid-cols-2">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="mentor" disabled={profile.user_type !== 'mentor'}>
+        <TabsList className="w-full max-w-md grid grid-cols-2 mb-8 mx-auto">
+          <TabsTrigger value="general" className="text-base py-3">
+            General
+          </TabsTrigger>
+          <TabsTrigger 
+            value="mentor" 
+            disabled={profile.user_type !== 'mentor'}
+            className="text-base py-3"
+          >
             Mentor Profile
           </TabsTrigger>
         </TabsList>
@@ -87,7 +88,6 @@ const Profile = () => {
         <TabsContent value="mentor" className="mt-6 space-y-8">
           {profile.user_type === 'mentor' && (
             <>
-              <MentorProfileForm onProfileUpdated={handleMentorProfileComplete} />
               <MentorAvailabilitySection />
               <MentorProfileCompleteCard userId={user.id} />
             </>

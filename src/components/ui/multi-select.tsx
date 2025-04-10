@@ -21,8 +21,8 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
-  options,
-  selected,
+  options = [],
+  selected = [],
   onChange,
   className,
   placeholder = "Select options",
@@ -33,9 +33,9 @@ export function MultiSelect({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter options based on search query
-  const filteredOptions = options.filter((option) => 
+  const filteredOptions = options?.filter((option) => 
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   // Toggle selection of an option
   const toggleOption = (value: string) => {
@@ -75,18 +75,22 @@ export function MultiSelect({
       <PopoverTrigger asChild>
         <div
           className={cn(
-            "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:cursor-pointer",
+            "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:cursor-pointer hover:bg-accent/5 transition-colors",
             className
           )}
         >
           <div className="flex flex-wrap gap-1 w-full">
-            {selected.length > 0 ? (
+            {selected?.length > 0 ? (
               <>
                 {selected.map((value) => (
-                  <Badge key={value} variant="secondary" className="mr-1 mb-1">
-                    {options.find(opt => opt.value === value)?.label || value}
+                  <Badge 
+                    key={value} 
+                    variant="secondary" 
+                    className="mr-1 mb-1 bg-primary/10 hover:bg-primary/20 text-primary border-none transition-colors"
+                  >
+                    {options?.find(opt => opt.value === value)?.label || value}
                     <button
-                      className="ml-1 ring-offset-background hover:bg-muted outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      className="ml-1 ring-offset-background hover:bg-primary/10 rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => removeOption(e, value)}
                     >
@@ -97,7 +101,7 @@ export function MultiSelect({
                 <div className="flex-1">
                   {!open && selected.length > 0 && (
                     <button
-                      className="px-1 text-xs text-muted-foreground"
+                      className="px-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                       onClick={clearOptions}
                     >
                       Clear
@@ -125,7 +129,7 @@ export function MultiSelect({
           <CommandEmpty>{emptyText}</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {filteredOptions.map((option) => {
-              const isSelected = selected.includes(option.value);
+              const isSelected = selected?.includes(option.value);
               return (
                 <CommandItem
                   key={option.value}
