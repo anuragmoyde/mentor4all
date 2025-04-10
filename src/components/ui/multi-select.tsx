@@ -33,9 +33,9 @@ export function MultiSelect({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter options based on search query
-  const filteredOptions = options.filter((option) => 
+  const filteredOptions = options?.filter((option) => 
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) || [];
 
   // Toggle selection of an option
   const toggleOption = (value: string) => {
@@ -84,7 +84,7 @@ export function MultiSelect({
               <>
                 {selected.map((value) => (
                   <Badge key={value} variant="secondary" className="mr-1 mb-1">
-                    {options.find(opt => opt.value === value)?.label || value}
+                    {options?.find(opt => opt.value === value)?.label || value}
                     <button
                       className="ml-1 ring-offset-background hover:bg-muted outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       onMouseDown={(e) => e.preventDefault()}
@@ -114,7 +114,7 @@ export function MultiSelect({
           </div>
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-[9999]" align="start">
+      <PopoverContent className="w-full p-0 z-50" align="start">
         <Command className="max-h-80">
           <CommandInput 
             placeholder="Search..." 

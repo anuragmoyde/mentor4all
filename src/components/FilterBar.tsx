@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -8,32 +8,85 @@ interface FilterOption {
   value: string;
 }
 
-interface FilterBarProps {
-  onSearch: (query: string) => void;
-  filters: {
-    [key: string]: {
-      label: string;
-      options: FilterOption[];
-      selected: string[];
-    }
-  };
-  onFilterChange: (filterName: string, values: string[]) => void;
+export interface FilterBarProps {
+  onIndustryChange?: (industry: string | null) => void;
+  onExpertiseChange?: (expertise: string | null) => void;
+  onRatingChange?: (rating: number | null) => void;
+  onPriceRangeChange?: (range: [number, number]) => void;
+  onSearch?: (query: string) => void;
   className?: string;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({ 
-  onSearch, 
-  filters, 
-  onFilterChange,
+  onIndustryChange, 
+  onExpertiseChange,
+  onRatingChange,
+  onPriceRangeChange,
+  onSearch,
   className 
 }) => {
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRefs = React.useRef<{ [key: string]: HTMLDivElement | null }>({});
+  
+  // Initialize filter states
+  const [industryFilter, setIndustryFilter] = useState<string[]>([]);
+  const [expertiseFilter, setExpertiseFilter] = useState<string[]>([]);
+  const [ratingFilter, setRatingFilter] = useState<string[]>([]);
+  const [priceFilter, setPriceFilter] = useState<string[]>([]);
+  
+  // Define filter options
+  const filters = {
+    industry: {
+      label: "Industry",
+      options: [
+        { label: "Technology", value: "Technology" },
+        { label: "Finance", value: "Finance" },
+        { label: "Healthcare", value: "Healthcare" },
+        { label: "Education", value: "Education" },
+        { label: "E-commerce", value: "E-commerce" },
+        { label: "Media & Entertainment", value: "Media & Entertainment" }
+      ],
+      selected: industryFilter
+    },
+    expertise: {
+      label: "Expertise",
+      options: [
+        { label: "Career Guidance", value: "Career Guidance" },
+        { label: "Leadership", value: "Leadership" },
+        { label: "Product Management", value: "Product Management" },
+        { label: "UX Design", value: "UX Design" },
+        { label: "Marketing", value: "Marketing" },
+        { label: "Software Development", value: "Software Development" }
+      ],
+      selected: expertiseFilter
+    },
+    rating: {
+      label: "Rating",
+      options: [
+        { label: "5 Stars", value: "5" },
+        { label: "4+ Stars", value: "4" },
+        { label: "3+ Stars", value: "3" }
+      ],
+      selected: ratingFilter
+    },
+    price: {
+      label: "Price Range",
+      options: [
+        { label: "₹0 - ₹500", value: "0-500" },
+        { label: "₹500 - ₹1000", value: "500-1000" },
+        { label: "₹1000 - ₹2000", value: "1000-2000" },
+        { label: "₹2000+", value: "2000+" }
+      ],
+      selected: priceFilter
+    }
+  };
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    onSearch(e.target.value);
+    if (onSearch) {
+      onSearch(e.target.value);
+    }
   };
   
   const toggleDropdown = (name: string) => {
@@ -48,7 +101,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
     }
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -56,20 +109,82 @@ const FilterBar: React.FC<FilterBarProps> = ({
   }, [activeDropdown]);
   
   const handleFilterSelect = (filterName: string, value: string) => {
-    const currentSelected = [...filters[filterName].selected];
-    const index = currentSelected.indexOf(value);
+    let newSelected: string[] = [];
     
-    if (index === -1) {
-      currentSelected.push(value);
-    } else {
-      currentSelected.splice(index, 1);
+    switch (filterName) {
+      case 'industry':
+        // For industry, only allow one selection
+        newSelected = industryFilter.includes(value) ? [] : [value];
+        setIndustryFilter(newSelected);
+        if (onIndustryChange) {
+          const industry = newSelected.length > 0 ? newSelected[0] : null;
+          onIndustryChange(industry);
+        }
+        break;
+        
+      case 'expertise':
+        // For expertise, only allow one selection
+        newSelected = expertiseFilter.includes(value) ? [] : [value];
+        setExpertiseFilter(newSelected);
+        if (onExpertiseChange) {
+          const expertise = newSelected.length > 0 ? newSelected[0] : null;
+          onExpertiseChange(expertise);
+        }
+        break;
+        
+      case 'rating':
+        // For rating, only allow one selection
+        newSelected = ratingFilter.includes(value) ? [] : [value];
+        setRatingFilter(newSelected);
+        if (onRatingChange) {
+          const rating = newSelected.length > 0 ? parseInt(newSelected[0]) : null;
+          onRatingChange(rating);
+        }
+        break;
+        
+      case 'price':
+        // For price, only allow one selection
+        newSelected = priceFilter.includes(value) ? [] : [value];
+        setPriceFilter(newSelected);
+        if (onPriceRangeChange) {
+          let range: [number, number] = [0, 10000];
+          if (newSelected.length > 0) {
+            const priceValue = newSelected[0];
+            if (priceValue === '0-500') range = [0, 500];
+            else if (priceValue === '500-1000') range = [500, 1000];
+            else if (priceValue === '1000-2000') range = [1000, 2000];
+            else if (priceValue === '2000+') range = [2000, 10000];
+          }
+          onPriceRangeChange(range);
+        }
+        break;
+        
+      default:
+        break;
     }
-    
-    onFilterChange(filterName, currentSelected);
   };
   
   const clearFilter = (filterName: string) => {
-    onFilterChange(filterName, []);
+    switch (filterName) {
+      case 'industry':
+        setIndustryFilter([]);
+        if (onIndustryChange) onIndustryChange(null);
+        break;
+      case 'expertise':
+        setExpertiseFilter([]);
+        if (onExpertiseChange) onExpertiseChange(null);
+        break;
+      case 'rating':
+        setRatingFilter([]);
+        if (onRatingChange) onRatingChange(null);
+        break;
+      case 'price':
+        setPriceFilter([]);
+        if (onPriceRangeChange) onPriceRangeChange([0, 10000]);
+        break;
+      default:
+        break;
+    }
   };
   
   // Format price labels to use rupee symbol
@@ -92,7 +207,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
           <button 
             onClick={() => {
               setSearchQuery('');
-              onSearch('');
+              if (onSearch) onSearch('');
             }}
             className="absolute right-3 text-gray-400 hover:text-gray-600"
           >
