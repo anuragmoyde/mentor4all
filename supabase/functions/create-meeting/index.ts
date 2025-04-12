@@ -37,6 +37,14 @@ Deno.serve(async (req) => {
 
     // Parse session start time and calculate expiry
     const sessionStartTime = new Date(startTime);
+    const currentTime = new Date();
+    
+    // If session is in the past, use current time as start time with 5 minutes buffer
+    if (sessionStartTime < currentTime) {
+      console.log("Session start time is in the past, adjusting to current time + 5 minutes");
+      sessionStartTime.setTime(currentTime.getTime() + 5 * 60 * 1000);
+    }
+    
     const sessionEndTime = new Date(sessionStartTime.getTime() + durationMinutes * 60 * 1000);
     
     // Add buffer time to expiry (1 hour after session ends)

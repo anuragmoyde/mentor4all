@@ -26,7 +26,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
   const [sessionDescription, setSessionDescription] = useState("");
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
-  const { availableSlots, isLoading } = useAvailability(mentorId);
+  const { availableSlots, isLoading, refreshAvailability } = useAvailability(mentorId);
   const { createMeetingUrl } = useMeetingUrl();
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
@@ -52,6 +52,17 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
       return;
     }
 
+    // Check if the slot is in the past
+    const slotDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
+    if (slotDateTime < new Date()) {
+      toast({
+        title: "Invalid time slot",
+        description: "You cannot book a session in the past.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!sessionTitle.trim()) {
       toast({
         title: "Session title required",
@@ -64,11 +75,39 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
     setIsBooking(true);
 
     try {
+      // First, check if the slot is still available
+      const { data: slotCheck, error: slotCheckError } = await supabase
+        .from('mentor_availability')
+        .select('is_booked')
+        .eq('id', selectedSlot.id)
+        .single();
+        
+      if (slotCheckError) throw slotCheckError;
+      
+      if (slotCheck.is_booked) {
+        toast({
+          title: "Time slot unavailable",
+          description: "This time slot has been booked by someone else. Please select another time slot.",
+          variant: "destructive"
+        });
+        refreshAvailability();
+        setIsBooking(false);
+        return;
+      }
+
       // Calculate session price based on hourly rate and duration
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
+
+      // Mark the slot as booked first to prevent double bookings
+      const { error: slotError } = await supabase
+        .from('mentor_availability')
+        .update({ is_booked: true })
+        .eq('id', selectedSlot.id);
+
+      if (slotError) throw slotError;
 
       // Create the session
       const { data: sessionData, error: sessionError } = await supabase
@@ -89,7 +128,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Create a meeting URL for the session
+      // Generate meeting URL (even if it's close to the session time)
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
@@ -105,18 +144,13 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
           .eq('id', sessionData.id);
       }
 
-      // Mark availability slot as booked
-      const { error: slotError } = await supabase
-        .from('mentor_availability')
-        .update({ is_booked: true })
-        .eq('id', selectedSlot.id);
-
-      if (slotError) throw slotError;
-
       toast({
         title: "Session booked successfully!",
         description: `Your session with ${mentorName} is scheduled for ${format(new Date(selectedSlot.day), "EEEE, MMMM d")} at ${selectedSlot.startTime}.`,
       });
+
+      // Refresh availability to reflect the changes
+      refreshAvailability();
 
       // If there's a callback for booking completion, call it
       if (onBookingComplete) {
@@ -164,6 +198,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
             handleSlotSelect={handleSlotSelect}
             onContinue={() => setStep(2)}
             isLoading={isLoading}
+            hourlyRate={hourlyRate}
           />
         ) : (
           <SessionDetailsStep

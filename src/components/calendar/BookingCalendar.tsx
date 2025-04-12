@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [sessionDescription, setSessionDescription] = useState("");
   const [isBooking, setIsBooking] = useState(false);
   const { toast } = useToast();
-  const { availableSlots, isLoading } = useAvailability(mentorId);
+  const { availableSlots, isLoading, refreshAvailability } = useAvailability(mentorId);
   const { createMeetingUrl } = useMeetingUrl();
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
@@ -49,6 +50,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       return;
     }
 
+    // Check if the slot is in the past
+    const slotDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
+    if (slotDateTime < new Date()) {
+      toast({
+        title: "Invalid time slot",
+        description: "You cannot book a session in the past.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!sessionTitle.trim()) {
       toast({
         title: "Session title required",
@@ -61,11 +73,40 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setIsBooking(true);
 
     try {
+      // First, check if the slot is still available
+      const { data: slotCheck, error: slotCheckError } = await supabase
+        .from('mentor_availability')
+        .select('is_booked')
+        .eq('id', selectedSlot.id)
+        .single();
+        
+      if (slotCheckError) throw slotCheckError;
+      
+      if (slotCheck.is_booked) {
+        toast({
+          title: "Time slot unavailable",
+          description: "This time slot has been booked by someone else. Please select another time slot.",
+          variant: "destructive"
+        });
+        refreshAvailability();
+        setIsBooking(false);
+        return;
+      }
+
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
+      // Mark the slot as booked first to prevent double bookings
+      const { error: slotError } = await supabase
+        .from('mentor_availability')
+        .update({ is_booked: true })
+        .eq('id', selectedSlot.id);
+
+      if (slotError) throw slotError;
+
+      // Create the session
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -84,6 +125,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
+      // Generate meeting URL (even if it's close to the session time)
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
@@ -98,17 +140,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           .eq('id', sessionData.id);
       }
 
-      const { error: slotError } = await supabase
-        .from('mentor_availability')
-        .update({ is_booked: true })
-        .eq('id', selectedSlot.id);
-
-      if (slotError) throw slotError;
-
       toast({
         title: "Session booked successfully!",
         description: `Your session with ${mentorName} is scheduled for ${new Date(selectedSlot.day).toLocaleDateString()} at ${selectedSlot.startTime}.`,
       });
+
+      // Refresh availability to reflect the changes
+      refreshAvailability();
 
       if (onBookingComplete) {
         onBookingComplete();
