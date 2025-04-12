@@ -199,7 +199,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       if (meetingUrl) {
         const { error: updateError } = await supabase
           .from('sessions')
-          .update({ meeting_url: meetingUrl })
+          .update({ 
+            meeting_url: meetingUrl 
+          })
           .eq('id', sessionData.id);
 
         if (updateError) {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -198,7 +199,9 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
       if (meetingUrl) {
         const { error: updateError } = await supabase
           .from('sessions')
-          .update({ meeting_url: meetingUrl })
+          .update({ 
+            meeting_url: meetingUrl 
+          })
           .eq('id', sessionData.id);
 
         if (updateError) {
