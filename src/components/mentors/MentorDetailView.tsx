@@ -187,7 +187,7 @@ const MentorDetailView: React.FC<MentorDetailViewProps> = ({ mentorId, onBack })
         mentorId={mentorId} 
         mentorName={`${profile.first_name} ${profile.last_name}`}
         hourlyRate={mentor.hourly_rate}
-        onSessionBooked={handleBookingComplete}
+        onBookingComplete={handleBookingComplete}
       />
     </div>
   );
