@@ -12,6 +12,7 @@ interface SessionData {
   price: number;
   description?: string;
   status?: string;
+  meeting_url?: string;
   mentors?: {
     profiles: {
       first_name: string;
@@ -87,6 +88,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
             description={session.description}
             status={session.status}
             isMentor={isMentor}
+            meetingUrl={session.meeting_url}
           />
         );
       })}

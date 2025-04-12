@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,33 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setStep(2);
   };
 
+  // Create a meeting URL using the Daily.co API
+  const createMeetingUrl = async (sessionId: string, sessionStartTime: string, durationMinutes: number) => {
+    try {
+      const token = await supabase.auth.getSession();
+      if (!token.data.session) throw new Error("No auth session");
+
+      const response = await supabase.functions.invoke('create-meeting', {
+        body: {
+          sessionId,
+          sessionTitle: sessionTitle || `Session with ${mentorName}`,
+          startTime: sessionStartTime,
+          durationMinutes,
+        }
+      });
+
+      if (response.error) {
+        console.error('Error creating meeting:', response.error);
+        throw new Error(response.error.message || 'Failed to create meeting');
+      }
+
+      return response.data.meetingUrl;
+    } catch (error) {
+      console.error('Error in createMeetingUrl:', error);
+      return null;
+    }
+  };
+
   const handleBookSession = async () => {
     if (!user || !profile) {
       toast({
@@ -160,6 +188,25 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
+      // Create a meeting URL for the session
+      const meetingUrl = await createMeetingUrl(
+        sessionData.id,
+        `${selectedSlot.day}T${selectedSlot.startTime}`,
+        durationMinutes
+      );
+
+      // Update the session with the meeting URL if it was created
+      if (meetingUrl) {
+        const { error: updateError } = await supabase
+          .from('sessions')
+          .update({ meeting_url: meetingUrl })
+          .eq('id', sessionData.id);
+
+        if (updateError) {
+          console.error('Error updating session with meeting URL:', updateError);
+        }
+      }
+
       // Mark availability slot as booked
       const { error: slotError } = await supabase
         .from('mentor_availability')
@@ -197,22 +244,39 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           mode="single"
           selected={selectedDate}
           onSelect={setSelectedDate}
+          modifiers={{
+            available: (date) => {
+              const formattedDate = format(date, 'yyyy-MM-dd');
+              return availableSlots.some(slot => slot.day === formattedDate);
+            },
+          }}
+          modifiersStyles={{
+            available: { 
+              backgroundColor: "rgba(52, 211, 153, 0.1)",
+              border: "2px solid rgba(52, 211, 153, 0.5)" 
+            }
+          }}
+          disabled={(date) => 
+            date < new Date() || // Past dates
+            !availableSlots.some(slot => slot.day === format(date, 'yyyy-MM-dd')) // Dates without slots
+          }
+          fromDate={new Date()}
         />
-        {selectedDate && (
-          <div>
-            <p>Available Time Slots:</p>
-            {getSlotsForDate(selectedDate).map((slot) => (
-              <Button
-                key={slot.id}
-                variant={selectedSlot?.id === slot.id ? "default" : "outline"}
-                onClick={() => handleSlotSelect(slot)}
-              >
-                {slot.startTime} - {slot.endTime}
-              </Button>
-            ))}
-          </div>
-        )}
       </div>
+      {selectedDate && (
+        <div>
+          <p>Available Time Slots:</p>
+          {getSlotsForDate(selectedDate).map((slot) => (
+            <Button
+              key={slot.id}
+              variant={selectedSlot?.id === slot.id ? "default" : "outline"}
+              onClick={() => handleSlotSelect(slot)}
+            >
+              {slot.startTime} - {slot.endTime}
+            </Button>
+          ))}
+        </div>
+      )}
       {selectedSlot && (
         <div className="mt-6 flex justify-end">
           <Button onClick={moveToSessionDetails}>

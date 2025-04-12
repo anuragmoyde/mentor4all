@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, MessageCircle, Video } from 'lucide-react';
+import { Calendar, Clock, MessageCircle, Video, ExternalLink } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -20,6 +20,7 @@ interface SessionCardProps {
   description?: string;
   status?: string;
   isMentor?: boolean;
+  meetingUrl?: string;
 }
 
 const SessionCard: React.FC<SessionCardProps> = ({
@@ -33,6 +34,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
   description,
   status = 'scheduled',
   isMentor = false,
+  meetingUrl,
 }) => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const formattedDate = format(parseISO(dateTime), 'EEEE, MMMM do');
@@ -43,6 +45,13 @@ const SessionCard: React.FC<SessionCardProps> = ({
   
   const isPast = new Date(dateTime) < new Date();
   const isToday = format(parseISO(dateTime), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  
+  // Calculate if the meeting is active (15 min before start until end)
+  const now = new Date();
+  const sessionStart = parseISO(dateTime);
+  const sessionEnd = sessionEndTime;
+  const bufferTime = 15 * 60 * 1000; // 15 minutes in milliseconds
+  const isActive = now >= new Date(sessionStart.getTime() - bufferTime) && now <= sessionEnd;
   
   const getStatusColor = () => {
     if (status === 'completed') return 'bg-green-100 text-green-800';
@@ -58,6 +67,12 @@ const SessionCard: React.FC<SessionCardProps> = ({
     if (isPast) return 'Missed';
     if (isToday) return 'Today';
     return 'Upcoming';
+  };
+
+  const handleJoinMeeting = () => {
+    if (meetingUrl) {
+      window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -116,20 +131,59 @@ const SessionCard: React.FC<SessionCardProps> = ({
       
       <CardFooter className="pt-2">
         <div className="flex gap-2 w-full">
-          {!isPast && (
+          {!isPast && isActive && meetingUrl && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="default" size="sm" className="flex-1" onClick={handleJoinMeeting}>
                     <Video className="h-4 w-4 mr-2" />
                     Join Meeting
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Join the video meeting when it's time</p>
+                  <p>Join the video meeting now</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+          
+          {!isPast && !isActive && meetingUrl && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1" disabled>
+                    <Video className="h-4 w-4 mr-2" />
+                    Join Meeting
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Meeting will be available 15 minutes before the scheduled time</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {!isPast && !meetingUrl && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1" disabled>
+                    <Video className="h-4 w-4 mr-2" />
+                    Meeting Link Pending
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Meeting link will be available soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
+          {isPast && meetingUrl && (
+            <Button variant="outline" size="sm" className="flex-1" onClick={handleJoinMeeting}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Recording
+            </Button>
           )}
           
           <Button variant="outline" size="sm" className="flex-1">

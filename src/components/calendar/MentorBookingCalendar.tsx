@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -44,8 +43,33 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
   const [sessionTitle, setSessionTitle] = useState("");
   const [sessionDescription, setSessionDescription] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
-  
-  // Fetch all available slots for this mentor
+
+  const createMeetingUrl = async (sessionId: string, sessionStartTime: string, durationMinutes: number) => {
+    try {
+      const token = await supabase.auth.getSession();
+      if (!token.data.session) throw new Error("No auth session");
+
+      const response = await supabase.functions.invoke('create-meeting', {
+        body: {
+          sessionId,
+          sessionTitle: sessionTitle || `Session with ${mentorName}`,
+          startTime: sessionStartTime,
+          durationMinutes,
+        }
+      });
+
+      if (response.error) {
+        console.error('Error creating meeting:', response.error);
+        throw new Error(response.error.message || 'Failed to create meeting');
+      }
+
+      return response.data.meetingUrl;
+    } catch (error) {
+      console.error('Error in createMeetingUrl:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const fetchAvailability = async () => {
       setIsLoading(true);
@@ -55,22 +79,20 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
           .select('*')
           .eq('mentor_id', mentorId)
           .eq('is_booked', false)
-          .gte('day', new Date().toISOString().split('T')[0]); // Only fetch future dates
+          .gte('day', new Date().toISOString().split('T')[0]);
 
         if (error) throw error;
 
-        // Format the data
         const formattedSlots = data.map(slot => ({
           id: slot.id,
           day: slot.day,
-          startTime: slot.start_time.slice(0, 5), // Format time to HH:MM
+          startTime: slot.start_time.slice(0, 5),
           endTime: slot.end_time.slice(0, 5),
           isBooked: slot.is_booked
         }));
 
         setAvailableSlots(formattedSlots);
 
-        // Extract unique dates with slots
         const uniqueDates = [...new Set(formattedSlots.map(slot => slot.day))];
         setDatesWithSlots(uniqueDates.map(dateStr => new Date(dateStr)));
       } catch (error) {
@@ -90,7 +112,6 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
     }
   }, [mentorId]);
 
-  // Filter slots for the selected date
   const slotsForSelectedDate = selectedDate 
     ? availableSlots.filter(slot => 
         slot.day === format(selectedDate, 'yyyy-MM-dd')
@@ -113,7 +134,6 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
     setCurrentStep(2);
   };
 
-  // Book a session
   const handleBookSession = async () => {
     if (!user || !profile) {
       toast({
@@ -149,10 +169,8 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       
-      // Calculate price based on duration and hourly rate
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // Create session
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -171,7 +189,23 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Mark slot as booked
+      const meetingUrl = await createMeetingUrl(
+        sessionData.id,
+        `${selectedSlot.day}T${selectedSlot.startTime}`,
+        durationMinutes
+      );
+
+      if (meetingUrl) {
+        const { error: updateError } = await supabase
+          .from('sessions')
+          .update({ meeting_url: meetingUrl })
+          .eq('id', sessionData.id);
+
+        if (updateError) {
+          console.error('Error updating session with meeting URL:', updateError);
+        }
+      }
+
       const { error: slotError } = await supabase
         .from('mentor_availability')
         .update({ is_booked: true })
@@ -184,7 +218,6 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
         description: `Your session with ${mentorName} is confirmed for ${format(new Date(selectedSlot.day), 'EEEE, MMMM d')} at ${selectedSlot.startTime}.`,
       });
 
-      // Remove the booked slot from available slots
       setAvailableSlots(availableSlots.filter(s => s.id !== selectedSlot.id));
 
       if (onSessionBooked) {
@@ -206,7 +239,6 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
     }
   };
 
-  // Check if a date has available slots
   const isDayWithSlots = (date: Date) => {
     return datesWithSlots.some(d => 
       d.getDate() === date.getDate() && 
@@ -239,8 +271,8 @@ const MentorBookingCalendar: React.FC<MentorBookingCalendarProps> = ({
               }
             }}
             disabled={(date) => 
-              date < new Date() || // Past dates
-              !isDayWithSlots(date) // Dates without slots
+              date < new Date() || 
+              !isDayWithSlots(date)
             }
             fromDate={new Date()}
           />

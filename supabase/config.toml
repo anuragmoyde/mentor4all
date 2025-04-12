@@ -1,1 +1,5 @@
+
 project_id = "lmxfscewppgfdjaploki"
+
+[functions.create-meeting]
+verify_jwt = true
