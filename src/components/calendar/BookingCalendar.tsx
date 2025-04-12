@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,13 +61,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setIsBooking(true);
 
     try {
-      // Calculate session price based on hourly rate and duration
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // Create the session
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -87,7 +84,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Create a meeting URL for the session
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
@@ -95,21 +91,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         durationMinutes
       });
 
-      // Update the session with the meeting URL if it was created
       if (meetingUrl) {
-        const { error: updateError } = await supabase
+        await supabase
           .from('sessions')
-          .update({ 
-            meeting_url: meetingUrl 
-          })
+          .update({ meeting_url: meetingUrl })
           .eq('id', sessionData.id);
-
-        if (updateError) {
-          console.error('Error updating session with meeting URL:', updateError);
-        }
       }
 
-      // Mark availability slot as booked
       const { error: slotError } = await supabase
         .from('mentor_availability')
         .update({ is_booked: true })
@@ -122,7 +110,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         description: `Your session with ${mentorName} is scheduled for ${new Date(selectedSlot.day).toLocaleDateString()} at ${selectedSlot.startTime}.`,
       });
 
-      // If there's a callback for booking completion, call it
       if (onBookingComplete) {
         onBookingComplete();
       }
@@ -154,6 +141,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           handleSlotSelect={handleSlotSelect}
           onContinue={() => setStep(2)}
           isLoading={isLoading}
+          hourlyRate={hourlyRate}
         />
       ) : (
         <SessionDetailsStep
