@@ -13,6 +13,7 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [pastSessions, setPastSessions] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const { toast } = useToast(); // Properly destructure toast from useToast hook
 
   const { data: sessionsData, isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['mentee-sessions', userId],
@@ -117,7 +118,7 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
       });
       setDashboardLoading(false);
     }
-  }, [sessionsError]);
+  }, [sessionsError, toast]);
 
   return {
     upcomingSessions,
