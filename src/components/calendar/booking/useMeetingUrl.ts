@@ -59,6 +59,11 @@ export const useMeetingUrl = () => {
 
       if (response.error) {
         console.error('Error creating meeting:', response.error);
+        toast({
+          title: "Error creating meeting",
+          description: response.error.message || "Failed to create meeting",
+          variant: "destructive"
+        });
         throw new Error(response.error.message || 'Failed to create meeting');
       }
 

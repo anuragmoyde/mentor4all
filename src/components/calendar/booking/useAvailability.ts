@@ -13,12 +13,22 @@ export const useAvailability = (mentorId: string) => {
     setIsLoading(true);
     try {
       console.log('Fetching availability for mentor:', mentorId);
+      
+      // Get current date and time in IST
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+      
+      console.log('Current date:', currentDate, 'Current time:', currentTimeString);
+      
       const { data, error } = await supabase
         .from('mentor_availability')
         .select('*')
         .eq('mentor_id', mentorId)
         .eq('is_booked', false)
-        .gte('day', new Date().toISOString().split('T')[0]); // Only fetch future dates
+        .gte('day', currentDate); // Only fetch future dates
 
       if (error) throw error;
 
@@ -34,13 +44,9 @@ export const useAvailability = (mentorId: string) => {
       }));
 
       // Filter out past time slots for today
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      
       const filteredSlots = formattedSlots.filter(slot => {
-        if (slot.day > today) return true;
-        if (slot.day === today && slot.startTime > currentTime) return true;
+        if (slot.day > currentDate) return true;
+        if (slot.day === currentDate && slot.startTime > currentTimeString) return true;
         return false;
       });
 

@@ -74,7 +74,10 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
           throw pastError;
         }
         
-        // Process the sessions to include the original time string to avoid time zone issues
+        console.log('Raw upcoming sessions:', upcoming);
+        console.log('Raw past sessions:', past);
+        
+        // Process the sessions to preserve the original time strings
         const processedUpcoming = upcoming?.map(session => ({
           ...session,
           original_time_string: session.date_time

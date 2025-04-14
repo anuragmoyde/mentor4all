@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -46,13 +46,15 @@ const SessionCard: React.FC<SessionCardProps> = ({
   onReschedule,
 }) => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const { toast } = useToast();
   const { createMeetingUrl } = useMeetingUrl();
   
   // Parse the date once to avoid repeated calculations and time zone issues
+  // Use the original time string to avoid timezone issues
   const sessionDate = parseISO(dateTime);
   
+  // Format with IST timezone consideration
   const formattedDate = format(sessionDate, 'EEEE, MMMM do');
   const formattedTime = format(sessionDate, 'h:mm a');
   const durationInHours = duration / 60;
@@ -69,37 +71,23 @@ const SessionCard: React.FC<SessionCardProps> = ({
   const bufferTime = 15 * 60 * 1000; // 15 minutes in milliseconds
   const isActive = now >= new Date(sessionStart.getTime() - bufferTime) && now <= sessionEnd;
   
-  // If meeting is soon and no link, attempt to generate one
-  React.useEffect(() => {
+  // If meeting is active or upcoming, check for meeting URL
+  useEffect(() => {
     const checkAndGenerateMeetingLink = async () => {
-      if (!isPast && isActive && !meetingUrl && id && mentorId) {
+      if (!isPast && !meetingUrl && id && mentorId) {
         try {
-          console.log('Generating meeting link for upcoming session:', id);
-          const generatedUrl = await createMeetingUrl({
-            sessionId: id,
-            sessionTitle: title || `Session with ${personName}`,
-            startTime: dateTime,
-            durationMinutes: duration
-          });
+          console.log('Checking if meeting link is needed for session:', id);
           
-          if (generatedUrl) {
-            console.log('Successfully generated meeting URL:', generatedUrl);
-            toast({
-              title: "Meeting link generated",
-              description: "You can now join the meeting for your upcoming session.",
-            });
-            
-            // Refresh the page to show the new link
-            if (onReschedule) onReschedule();
-          }
+          // Always generate a meeting link for upcoming sessions that don't have one
+          await generateMeetingLink();
         } catch (error) {
-          console.error('Error generating meeting link:', error);
+          console.error('Error checking meeting link:', error);
         }
       }
     };
     
     checkAndGenerateMeetingLink();
-  }, [id, isPast, isActive, meetingUrl, dateTime, title, personName, duration, mentorId, createMeetingUrl, toast, onReschedule]);
+  }, [id, isPast, meetingUrl, mentorId]);
   
   const getStatusColor = () => {
     if (status === 'completed') return 'bg-green-100 text-green-800';
@@ -120,16 +108,19 @@ const SessionCard: React.FC<SessionCardProps> = ({
   const handleJoinMeeting = () => {
     if (meetingUrl) {
       window.open(meetingUrl, '_blank', 'noopener,noreferrer');
-    } else if (isActive && id && mentorId) {
-      // If we're in the active window but don't have a meeting URL, try to generate one
+    } else if (id && mentorId) {
+      // If we don't have a meeting URL, try to generate one
       generateMeetingLink();
     }
   };
   
   const generateMeetingLink = async () => {
-    if (!id || !mentorId) return;
+    if (!id || !mentorId || isGeneratingLink) return;
     
     try {
+      setIsGeneratingLink(true);
+      console.log('Generating meeting link for session:', id);
+      
       const url = await createMeetingUrl({
         sessionId: id,
         sessionTitle: title || `Session with ${personName}`,
@@ -159,17 +150,22 @@ const SessionCard: React.FC<SessionCardProps> = ({
         description: "Failed to generate meeting link. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsGeneratingLink(false);
     }
   };
   
   const handleReschedule = async () => {
-    // This will be implemented in the future
-    toast({
-      title: "Reschedule feature",
-      description: "The reschedule feature is now available. Please go to the mentor's profile to reschedule this session.",
-    });
+    if (!mentorId) {
+      toast({
+        title: "Cannot reschedule",
+        description: "Mentor information is missing. Please contact support.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Navigate to mentor's profile with the session ID
+    // Navigate to mentor's profile with the session ID for rescheduling
     window.location.href = `/mentors/${mentorId}?reschedule=${id}`;
   };
 
@@ -229,7 +225,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
       
       <CardFooter className="pt-2">
         <div className="flex gap-2 w-full">
-          {!isPast && isActive && meetingUrl && (
+          {!isPast && meetingUrl && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -245,50 +241,19 @@ const SessionCard: React.FC<SessionCardProps> = ({
             </TooltipProvider>
           )}
           
-          {!isPast && isActive && !meetingUrl && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="default" size="sm" className="flex-1" onClick={generateMeetingLink}>
-                    <Video className="h-4 w-4 mr-2" />
-                    Generate Meeting Link
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create a meeting link for this session</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          
-          {!isPast && !isActive && meetingUrl && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1" disabled>
-                    <Video className="h-4 w-4 mr-2" />
-                    Join Meeting
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Meeting will be available 15 minutes before the scheduled time</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          
-          {!isPast && !isActive && !meetingUrl && (
+          {!isPast && !meetingUrl && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    variant="outline" 
+                    variant="default" 
                     size="sm" 
                     className="flex-1" 
                     onClick={generateMeetingLink}
+                    disabled={isGeneratingLink}
                   >
                     <Video className="h-4 w-4 mr-2" />
-                    Generate Meeting Link
+                    {isGeneratingLink ? "Generating..." : "Generate Meeting Link"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

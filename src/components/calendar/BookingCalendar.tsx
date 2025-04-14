@@ -106,13 +106,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (slotError) throw slotError;
 
-      // Create the session
+      // Create the session - store the original time string to maintain timezone consistency
+      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}`;
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: `${selectedSlot.day}T${selectedSlot.startTime}`,
+          date_time: originalTimeString,
           duration: durationMinutes,
           price: sessionPrice,
           title: sessionTitle,
@@ -125,19 +126,23 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (sessionError) throw sessionError;
 
-      // Generate meeting URL (even if it's close to the session time)
+      // Generate meeting URL for the session immediately
+      console.log('Generating meeting URL for newly created session');
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
-        startTime: `${selectedSlot.day}T${selectedSlot.startTime}`,
+        startTime: originalTimeString,
         durationMinutes
       });
 
       if (meetingUrl) {
+        console.log('Successfully generated meeting URL:', meetingUrl);
         await supabase
           .from('sessions')
           .update({ meeting_url: meetingUrl })
           .eq('id', sessionData.id);
+      } else {
+        console.warn('Could not generate meeting URL during booking');
       }
 
       toast({

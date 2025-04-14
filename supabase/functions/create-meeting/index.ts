@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse session start time and calculate expiry
+    // Adjust time to IST for consistency across the platform
     const sessionStartTime = new Date(startTime);
     const currentTime = new Date();
     
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
     if (!dailyApiKey) {
       console.error('DAILY_API_KEY is not set');
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
+        JSON.stringify({ error: 'Server configuration error - Daily API Key missing' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
     if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase credentials not set');
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
+        JSON.stringify({ error: 'Server configuration error - Supabase credentials missing' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -97,6 +98,15 @@ Deno.serve(async (req) => {
     // Create a unique room name based on the session ID
     const roomName = `session-${sessionId.replace(/-/g, '')}`;
     
+    // Log all the parameters for debugging
+    console.log('Creating Daily.co room with parameters:', {
+      roomName,
+      expiry: Math.floor(expiryTime.getTime() / 1000),
+      sessionStartTime: sessionStartTime.toISOString(),
+      sessionEndTime: sessionEndTime.toISOString(),
+      expiryTime: expiryTime.toISOString()
+    });
+    
     // Call Daily.co API to create a room
     const dailyResponse = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
@@ -118,16 +128,34 @@ Deno.serve(async (req) => {
     });
 
     if (!dailyResponse.ok) {
-      const errorData = await dailyResponse.json();
-      console.error('Daily.co API error:', errorData);
+      const errorText = await dailyResponse.text();
+      console.error('Daily.co API error status:', dailyResponse.status);
+      console.error('Daily.co API error response:', errorText);
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        console.error('Daily.co API error parsed:', errorData);
+      } catch (e) {
+        console.error('Could not parse Daily.co error response as JSON');
+      }
+      
       return new Response(
-        JSON.stringify({ error: 'Failed to create meeting room' }),
+        JSON.stringify({ error: `Failed to create meeting room. Status: ${dailyResponse.status}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const dailyData = await dailyResponse.json();
+    console.log('Daily.co API response:', dailyData);
+    
     const meetingUrl = dailyData.url;
+    if (!meetingUrl) {
+      console.error('Daily.co API did not return a URL');
+      return new Response(
+        JSON.stringify({ error: 'Failed to create meeting room - no URL returned' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Update the session with the meeting URL in Supabase
     const { error: updateError } = await supabase
@@ -136,7 +164,7 @@ Deno.serve(async (req) => {
       .eq('id', sessionId);
 
     if (updateError) {
-      console.error('Error updating session:', updateError);
+      console.error('Error updating session with meeting URL:', updateError);
       return new Response(
         JSON.stringify({ error: 'Failed to update session with meeting URL' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -155,7 +183,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error creating meeting:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error: ' + error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
