@@ -26,6 +26,7 @@ interface SessionsTabsProps {
   pastSessions: SessionData[];
   isLoading: boolean;
   isMentor?: boolean;
+  onRefresh?: () => void;
 }
 
 const SessionsTabs: React.FC<SessionsTabsProps> = ({
@@ -33,6 +34,7 @@ const SessionsTabs: React.FC<SessionsTabsProps> = ({
   pastSessions,
   isLoading,
   isMentor = false,
+  onRefresh,
 }) => {
   return (
     <Tabs defaultValue="upcoming" className="space-y-4">
@@ -50,6 +52,7 @@ const SessionsTabs: React.FC<SessionsTabsProps> = ({
             text: "Find a Mentor",
             route: "/mentors"
           } : undefined}
+          onRefresh={onRefresh}
         />
       </TabsContent>
       <TabsContent value="past" className="space-y-4">
@@ -58,6 +61,7 @@ const SessionsTabs: React.FC<SessionsTabsProps> = ({
           isLoading={isLoading}
           isMentor={isMentor}
           emptyMessage="You don't have any past sessions yet."
+          onRefresh={onRefresh}
         />
       </TabsContent>
     </Tabs>

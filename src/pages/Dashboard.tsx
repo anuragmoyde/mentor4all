@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -31,6 +31,11 @@ const Dashboard: React.FC = () => {
   const { upcomingSessions, pastSessions, dashboardLoading, sessionsLoading } = 
     useMenteeSessions(user?.id, profile?.user_type);
 
+  const refreshDashboard = useCallback(() => {
+    // Force refetch by navigating to the same page
+    window.location.reload();
+  }, []);
+
   // If auth is still loading or we're redirecting
   if (isLoading) {
     return <DashboardLoading />;
@@ -59,6 +64,7 @@ const Dashboard: React.FC = () => {
         sessionsLoading={sessionsLoading}
         upcomingSessions={upcomingSessions}
         pastSessions={pastSessions}
+        onRefresh={refreshDashboard}
       />
     </div>
   );

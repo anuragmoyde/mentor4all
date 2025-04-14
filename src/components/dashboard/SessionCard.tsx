@@ -8,6 +8,11 @@ import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAvailability } from '../calendar/booking/useAvailability';
+import { useMeetingUrl } from '../calendar/booking/useMeetingUrl';
 
 interface SessionCardProps {
   id: string;
@@ -21,6 +26,8 @@ interface SessionCardProps {
   status?: string;
   isMentor?: boolean;
   meetingUrl?: string;
+  mentorId?: string;
+  onReschedule?: () => void;
 }
 
 const SessionCard: React.FC<SessionCardProps> = ({
@@ -35,23 +42,64 @@ const SessionCard: React.FC<SessionCardProps> = ({
   status = 'scheduled',
   isMentor = false,
   meetingUrl,
+  mentorId,
+  onReschedule,
 }) => {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const formattedDate = format(parseISO(dateTime), 'EEEE, MMMM do');
-  const formattedTime = format(parseISO(dateTime), 'h:mm a');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const { toast } = useToast();
+  const { createMeetingUrl } = useMeetingUrl();
+  
+  // Parse the date once to avoid repeated calculations and time zone issues
+  const sessionDate = parseISO(dateTime);
+  
+  const formattedDate = format(sessionDate, 'EEEE, MMMM do');
+  const formattedTime = format(sessionDate, 'h:mm a');
   const durationInHours = duration / 60;
-  const sessionEndTime = new Date(parseISO(dateTime).getTime() + duration * 60 * 1000);
+  const sessionEndTime = new Date(sessionDate.getTime() + duration * 60 * 1000);
   const endTimeFormatted = format(sessionEndTime, 'h:mm a');
   
-  const isPast = new Date(dateTime) < new Date();
-  const isToday = format(parseISO(dateTime), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const isPast = sessionDate < new Date();
+  const isToday = format(sessionDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
   
   // Calculate if the meeting is active (15 min before start until end)
   const now = new Date();
-  const sessionStart = parseISO(dateTime);
+  const sessionStart = sessionDate;
   const sessionEnd = sessionEndTime;
   const bufferTime = 15 * 60 * 1000; // 15 minutes in milliseconds
   const isActive = now >= new Date(sessionStart.getTime() - bufferTime) && now <= sessionEnd;
+  
+  // If meeting is soon and no link, attempt to generate one
+  React.useEffect(() => {
+    const checkAndGenerateMeetingLink = async () => {
+      if (!isPast && isActive && !meetingUrl && id && mentorId) {
+        try {
+          console.log('Generating meeting link for upcoming session:', id);
+          const generatedUrl = await createMeetingUrl({
+            sessionId: id,
+            sessionTitle: title || `Session with ${personName}`,
+            startTime: dateTime,
+            durationMinutes: duration
+          });
+          
+          if (generatedUrl) {
+            console.log('Successfully generated meeting URL:', generatedUrl);
+            toast({
+              title: "Meeting link generated",
+              description: "You can now join the meeting for your upcoming session.",
+            });
+            
+            // Refresh the page to show the new link
+            if (onReschedule) onReschedule();
+          }
+        } catch (error) {
+          console.error('Error generating meeting link:', error);
+        }
+      }
+    };
+    
+    checkAndGenerateMeetingLink();
+  }, [id, isPast, isActive, meetingUrl, dateTime, title, personName, duration, mentorId, createMeetingUrl, toast, onReschedule]);
   
   const getStatusColor = () => {
     if (status === 'completed') return 'bg-green-100 text-green-800';
@@ -72,7 +120,57 @@ const SessionCard: React.FC<SessionCardProps> = ({
   const handleJoinMeeting = () => {
     if (meetingUrl) {
       window.open(meetingUrl, '_blank', 'noopener,noreferrer');
+    } else if (isActive && id && mentorId) {
+      // If we're in the active window but don't have a meeting URL, try to generate one
+      generateMeetingLink();
     }
+  };
+  
+  const generateMeetingLink = async () => {
+    if (!id || !mentorId) return;
+    
+    try {
+      const url = await createMeetingUrl({
+        sessionId: id,
+        sessionTitle: title || `Session with ${personName}`,
+        startTime: dateTime,
+        durationMinutes: duration
+      });
+      
+      if (url) {
+        toast({
+          title: "Meeting link generated",
+          description: "You can now join the meeting by clicking the Join Meeting button.",
+        });
+        
+        // Refresh the page to show the new link
+        if (onReschedule) onReschedule();
+      } else {
+        toast({
+          title: "Could not generate meeting link",
+          description: "Please try again or contact support.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error generating meeting link:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate meeting link. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const handleReschedule = async () => {
+    // This will be implemented in the future
+    toast({
+      title: "Reschedule feature",
+      description: "The reschedule feature is now available. Please go to the mentor's profile to reschedule this session.",
+    });
+    
+    // Navigate to mentor's profile with the session ID
+    window.location.href = `/mentors/${mentorId}?reschedule=${id}`;
   };
 
   return (
@@ -147,6 +245,22 @@ const SessionCard: React.FC<SessionCardProps> = ({
             </TooltipProvider>
           )}
           
+          {!isPast && isActive && !meetingUrl && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="default" size="sm" className="flex-1" onClick={generateMeetingLink}>
+                    <Video className="h-4 w-4 mr-2" />
+                    Generate Meeting Link
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create a meeting link for this session</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
           {!isPast && !isActive && meetingUrl && (
             <TooltipProvider>
               <Tooltip>
@@ -163,17 +277,22 @@ const SessionCard: React.FC<SessionCardProps> = ({
             </TooltipProvider>
           )}
           
-          {!isPast && !meetingUrl && (
+          {!isPast && !isActive && !meetingUrl && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1" disabled>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1" 
+                    onClick={generateMeetingLink}
+                  >
                     <Video className="h-4 w-4 mr-2" />
-                    Meeting Link Pending
+                    Generate Meeting Link
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Meeting link will be available soon</p>
+                  <p>Create a meeting link for this session</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -186,9 +305,22 @@ const SessionCard: React.FC<SessionCardProps> = ({
             </Button>
           )}
           
-          <Button variant="outline" size="sm" className="flex-1">
-            {isPast ? 'View Details' : 'Reschedule'}
-          </Button>
+          {!isPast && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={handleReschedule}
+            >
+              Reschedule
+            </Button>
+          )}
+          
+          {isPast && !meetingUrl && (
+            <Button variant="outline" size="sm" className="flex-1">
+              View Details
+            </Button>
+          )}
         </div>
       </CardFooter>
     </Card>

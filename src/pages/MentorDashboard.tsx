@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -32,6 +32,12 @@ const MentorDashboard = () => {
       }
     }
   }, [user, profile, isLoading, navigate]);
+
+  // Function to refresh dashboard data
+  const refreshDashboard = useCallback(() => {
+    // Force refetch by navigating to the same page
+    window.location.reload();
+  }, []);
 
   // Fetch mentor data
   const { data: mentorData, isLoading: mentorLoading } = useQuery({
@@ -192,6 +198,7 @@ const MentorDashboard = () => {
             pastSessions={pastSessions} 
             isLoading={false} 
             isMentor={true}
+            onRefresh={refreshDashboard}
           />
         </>
       )}

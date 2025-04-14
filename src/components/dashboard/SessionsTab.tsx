@@ -13,6 +13,7 @@ interface SessionData {
   description?: string;
   status?: string;
   meeting_url?: string;
+  mentor_id?: string;
   mentors?: {
     profiles: {
       first_name: string;
@@ -34,6 +35,7 @@ interface SessionsTabProps {
     text: string;
     route: string;
   };
+  onRefresh?: () => void;
 }
 
 const SessionsTab: React.FC<SessionsTabProps> = ({
@@ -42,6 +44,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
   isMentor = false,
   emptyMessage = "You don't have any sessions.",
   emptyActionButton,
+  onRefresh,
 }) => {
   const navigate = useNavigate();
 
@@ -74,6 +77,9 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
         const personLastName = isMentor
           ? session.profiles?.last_name || ''
           : session.mentors?.profiles.last_name || '';
+          
+        // Get the correct mentor ID depending on whether we're in mentor or mentee view
+        const mentorId = isMentor ? session.mentor_id : session.mentor_id;
         
         return (
           <SessionCard
@@ -89,6 +95,8 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
             status={session.status}
             isMentor={isMentor}
             meetingUrl={session.meeting_url}
+            mentorId={mentorId}
+            onReschedule={onRefresh}
           />
         );
       })}

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface SessionsData {
   upcoming: any[];
@@ -73,9 +73,20 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
           throw pastError;
         }
         
+        // Process the sessions to include the original time string to avoid time zone issues
+        const processedUpcoming = upcoming?.map(session => ({
+          ...session,
+          original_time_string: session.date_time
+        })) || [];
+        
+        const processedPast = past?.map(session => ({
+          ...session,
+          original_time_string: session.date_time
+        })) || [];
+        
         return { 
-          upcoming: upcoming || [], 
-          past: past || [] 
+          upcoming: processedUpcoming, 
+          past: processedPast 
         };
       } catch (error) {
         console.error('Error in session query:', error);

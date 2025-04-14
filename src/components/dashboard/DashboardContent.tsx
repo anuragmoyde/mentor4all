@@ -9,6 +9,7 @@ interface DashboardContentProps {
   sessionsLoading: boolean;
   upcomingSessions: any[];
   pastSessions: any[];
+  onRefresh?: () => void;
 }
 
 const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -16,6 +17,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
   sessionsLoading,
   upcomingSessions,
   pastSessions,
+  onRefresh,
 }) => {
   // Prepare stats for the StatCards component
   const stats: StatCardProps[] = [
@@ -59,7 +61,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({
       <SessionsTabs 
         upcomingSessions={upcomingSessions} 
         pastSessions={pastSessions}
-        isLoading={false} 
+        isLoading={false}
+        onRefresh={onRefresh}
       />
     </>
   );

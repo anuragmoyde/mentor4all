@@ -60,6 +60,40 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check if the session already has a meeting URL
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase credentials not set');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // First check if there's already a meeting URL
+    const { data: existingSession, error: checkError } = await supabase
+        .from('sessions')
+        .select('meeting_url')
+        .eq('id', sessionId)
+        .single();
+        
+    if (checkError) {
+      console.error('Error checking existing session:', checkError);
+    } else if (existingSession?.meeting_url) {
+      console.log('Meeting URL already exists, returning:', existingSession.meeting_url);
+      return new Response(
+        JSON.stringify({ 
+          meetingUrl: existingSession.meeting_url,
+          message: 'Existing meeting URL retrieved' 
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create a unique room name based on the session ID
     const roomName = `session-${sessionId.replace(/-/g, '')}`;
     
@@ -96,19 +130,6 @@ Deno.serve(async (req) => {
     const meetingUrl = dailyData.url;
 
     // Update the session with the meeting URL in Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase credentials not set');
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
     const { error: updateError } = await supabase
       .from('sessions')
       .update({ meeting_url: meetingUrl })
@@ -121,6 +142,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Successfully created meeting URL for session ${sessionId}: ${meetingUrl}`);
 
     return new Response(
       JSON.stringify({ 

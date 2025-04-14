@@ -12,6 +12,7 @@ export const useAvailability = (mentorId: string) => {
   const fetchAvailability = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching availability for mentor:', mentorId);
       const { data, error } = await supabase
         .from('mentor_availability')
         .select('*')
@@ -20,6 +21,8 @@ export const useAvailability = (mentorId: string) => {
         .gte('day', new Date().toISOString().split('T')[0]); // Only fetch future dates
 
       if (error) throw error;
+
+      console.log('Raw availability data:', data);
 
       // Format the data
       const formattedSlots = data.map(slot => ({
@@ -41,6 +44,7 @@ export const useAvailability = (mentorId: string) => {
         return false;
       });
 
+      console.log('Filtered availability slots:', filteredSlots);
       setAvailableSlots(filteredSlots);
     } catch (error) {
       console.error('Error fetching mentor availability:', error);
@@ -62,6 +66,7 @@ export const useAvailability = (mentorId: string) => {
 
   const refreshAvailability = useCallback(() => {
     if (mentorId) {
+      console.log('Refreshing availability for mentor:', mentorId);
       fetchAvailability();
     }
   }, [mentorId, fetchAvailability]);
