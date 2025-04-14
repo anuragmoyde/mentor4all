@@ -7,6 +7,8 @@ interface CreateMeetingParams {
   sessionTitle: string;
   startTime: string;
   durationMinutes: number;
+  mentorId?: string;
+  menteeEmail?: string;
 }
 
 export const useMeetingUrl = () => {
@@ -16,10 +18,12 @@ export const useMeetingUrl = () => {
     sessionId,
     sessionTitle,
     startTime,
-    durationMinutes
+    durationMinutes,
+    mentorId,
+    menteeEmail
   }: CreateMeetingParams) => {
     try {
-      console.log('Creating meeting URL for session:', sessionId);
+      console.log('Creating Google Meet URL for session:', sessionId);
       const token = await supabase.auth.getSession();
       if (!token.data.session) {
         console.error('No auth session found');
@@ -40,25 +44,29 @@ export const useMeetingUrl = () => {
         return sessionData.meeting_url;
       }
 
-      // If no meeting URL exists, create one
-      console.log('Invoking create-meeting function with params:', {
+      // If no meeting URL exists, create one using Google Calendar API
+      console.log('Invoking create-google-meet function with params:', {
         sessionId,
         sessionTitle,
         startTime,
         durationMinutes,
+        mentorId,
+        menteeEmail
       });
       
-      const response = await supabase.functions.invoke('create-meeting', {
+      const response = await supabase.functions.invoke('create-google-meet', {
         body: {
           sessionId,
           sessionTitle,
           startTime,
           durationMinutes,
+          mentorId,
+          menteeEmail
         }
       });
 
       if (response.error) {
-        console.error('Error creating meeting:', response.error);
+        console.error('Error creating Google Meet meeting:', response.error);
         toast({
           title: "Error creating meeting",
           description: response.error.message || "Failed to create meeting",
@@ -67,7 +75,7 @@ export const useMeetingUrl = () => {
         throw new Error(response.error.message || 'Failed to create meeting');
       }
 
-      console.log('Successfully created meeting:', response.data);
+      console.log('Successfully created Google Meet meeting:', response.data);
       return response.data.meetingUrl;
     } catch (error) {
       console.error('Error in createMeetingUrl:', error);

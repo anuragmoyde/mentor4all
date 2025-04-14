@@ -3,3 +3,6 @@ project_id = "lmxfscewppgfdjaploki"
 
 [functions.create-meeting]
 verify_jwt = true
+
+[functions.create-google-meet]
+verify_jwt = true

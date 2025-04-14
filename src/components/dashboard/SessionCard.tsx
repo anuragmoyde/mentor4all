@@ -8,7 +8,6 @@ import { format, parseISO } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAvailability } from '../calendar/booking/useAvailability';
@@ -125,7 +124,8 @@ const SessionCard: React.FC<SessionCardProps> = ({
         sessionId: id,
         sessionTitle: title || `Session with ${personName}`,
         startTime: dateTime,
-        durationMinutes: duration
+        durationMinutes: duration,
+        mentorId: mentorId
       });
       
       if (url) {
@@ -231,11 +231,11 @@ const SessionCard: React.FC<SessionCardProps> = ({
                 <TooltipTrigger asChild>
                   <Button variant="default" size="sm" className="flex-1" onClick={handleJoinMeeting}>
                     <Video className="h-4 w-4 mr-2" />
-                    Join Meeting
+                    Join Google Meet
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Join the video meeting now</p>
+                  <p>Join the Google Meet video call now</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -257,7 +257,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Create a meeting link for this session</p>
+                  <p>Create a Google Meet link for this session</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
