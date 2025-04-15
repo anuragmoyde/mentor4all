@@ -91,9 +91,9 @@ export const useMeetingUrl = () => {
         const warningMessage = response.data?.warning || "The server response did not contain a valid meeting URL";
         
         toast({
-          title: "Meeting link might not be reliable",
+          title: "Meeting link issue",
           description: warningMessage,
-          variant: "warning"
+          variant: "default" // Changed from "warning" to "default"
         });
         
         if (!response.data?.meetingUrl) {
@@ -108,7 +108,7 @@ export const useMeetingUrl = () => {
         toast({
           title: "Warning",
           description: "Generated meeting URL might not be a valid Google Meet link",
-          variant: "warning"
+          variant: "default" // Changed from "warning" to "default"
         });
       }
 
