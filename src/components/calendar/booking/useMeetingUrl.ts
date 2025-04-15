@@ -69,32 +69,70 @@ export const useMeetingUrl = () => {
 
       if (response.error) {
         console.error('Error creating Google Meet meeting:', response.error);
+        
+        let errorMessage = response.error.message || "Failed to create meeting";
+        if (response.error.message?.includes('token')) {
+          errorMessage = "Google Calendar access expired. Please log out and log in again with Google.";
+        }
+        
         toast({
           title: "Error creating meeting",
-          description: response.error.message || "Failed to create meeting",
+          description: errorMessage,
           variant: "destructive"
         });
-        throw new Error(response.error.message || 'Failed to create meeting');
+        throw new Error(errorMessage);
       }
 
       // Verify the response contains a valid meetingUrl
       if (!response.data || !response.data.meetingUrl) {
         console.error('Invalid response from create-google-meet function:', response.data);
+        
+        // Check if there's a warning about fallback
+        const warningMessage = response.data?.warning || "The server response did not contain a valid meeting URL";
+        
         toast({
-          title: "Error creating meeting",
-          description: "The server response did not contain a valid meeting URL",
-          variant: "destructive"
+          title: "Meeting link might not be reliable",
+          description: warningMessage,
+          variant: "warning"
         });
-        throw new Error('Invalid server response');
+        
+        if (!response.data?.meetingUrl) {
+          throw new Error('Invalid server response - no meeting URL provided');
+        }
       }
 
-      console.log('Successfully created Google Meet meeting:', response.data.meetingUrl);
-      return response.data.meetingUrl;
+      // Check if the URL is in the expected format for Google Meet
+      const meetingUrl = response.data.meetingUrl;
+      if (!meetingUrl.startsWith('https://meet.google.com/')) {
+        console.warn('Meeting URL does not appear to be a valid Google Meet URL:', meetingUrl);
+        toast({
+          title: "Warning",
+          description: "Generated meeting URL might not be a valid Google Meet link",
+          variant: "warning"
+        });
+      }
+
+      console.log('Successfully created Google Meet meeting:', meetingUrl);
+      
+      // Fetch the updated session to verify the URL was saved
+      const { data: updatedSession, error: updateCheckError } = await supabase
+        .from('sessions')
+        .select('meeting_url')
+        .eq('id', sessionId)
+        .single();
+        
+      if (updateCheckError) {
+        console.error('Error verifying meeting URL update:', updateCheckError);
+      } else {
+        console.log('Verified meeting URL in database:', updatedSession?.meeting_url);
+      }
+      
+      return meetingUrl;
     } catch (error) {
       console.error('Error in createMeetingUrl:', error);
       toast({
         title: "Error creating meeting",
-        description: "Could not create meeting URL. Please try again later.",
+        description: error.message || "Could not create meeting URL. Please try again later.",
         variant: "destructive"
       });
       return null;

@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing Authorization header');
       return new Response(
         JSON.stringify({ error: 'Authorization header is required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -31,6 +32,7 @@ Deno.serve(async (req) => {
     const { sessionId, sessionTitle, startTime, durationMinutes, mentorId, menteeEmail } = requestData;
 
     if (!sessionId || !sessionTitle || !startTime || !durationMinutes) {
+      console.error('Missing required fields in request data:', JSON.stringify(requestData));
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -100,14 +102,34 @@ Deno.serve(async (req) => {
       }
 
       mentorData = mentorUser?.user;
+      console.log('Retrieved mentor data. User ID:', mentorId);
       
       // Check if the user has provider token (Google OAuth)
-      if (mentorUser?.user?.app_metadata?.provider === 'google') {
+      if (mentorData && mentorUser?.user?.app_metadata?.provider === 'google') {
         // Try to get the token from different places it might be stored
         accessToken = mentorUser.user.app_metadata.provider_token || '';
         
-        // Log metadata for debugging
-        console.log('Mentor app_metadata:', JSON.stringify(mentorUser.user.app_metadata));
+        // Log metadata for debugging (mask part of the token for security)
+        console.log('Mentor auth provider:', mentorUser.user.app_metadata.provider);
+        if (accessToken) {
+          console.log('Found access token (first 10 chars):', accessToken.substring(0, 10) + '...');
+        } else {
+          console.log('No access token found in app_metadata.provider_token');
+        }
+        
+        // Check other potential locations for the token
+        if (!accessToken && mentorUser.user.identities && mentorUser.user.identities.length > 0) {
+          const googleIdentity = mentorUser.user.identities.find(id => id.provider === 'google');
+          if (googleIdentity?.access_token) {
+            accessToken = googleIdentity.access_token;
+            console.log('Found access token in identities (first 10 chars):', accessToken.substring(0, 10) + '...');
+          }
+        }
+      } else {
+        console.log('Mentor is not authenticated via Google or app_metadata is missing');
+        if (mentorData) {
+          console.log('Authentication provider:', mentorData.app_metadata?.provider);
+        }
       }
     }
 
@@ -119,46 +141,50 @@ Deno.serve(async (req) => {
       console.log('Using Google Calendar API to create meeting with mentor\'s access token');
       
       // Create a Google Calendar event with Google Meet
+      const calendarEventBody = {
+        summary: sessionTitle,
+        description: `Mentor4All session: ${sessionTitle}`,
+        start: {
+          dateTime: sessionStartISO
+        },
+        end: {
+          dateTime: sessionEndISO
+        },
+        attendees: menteeEmail ? [{ email: menteeEmail }] : [],
+        conferenceData: {
+          createRequest: {
+            requestId: `mentor4all-${sessionId.substring(0, 8)}-${Date.now()}`,
+            conferenceSolutionKey: { 
+              type: "hangoutsMeet" 
+            }
+          }
+        }
+      };
+      
+      console.log('Calendar API request body:', JSON.stringify(calendarEventBody));
+      
       const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          summary: sessionTitle,
-          description: `Mentor4All session: ${sessionTitle}`,
-          start: {
-            dateTime: sessionStartISO
-          },
-          end: {
-            dateTime: sessionEndISO
-          },
-          attendees: menteeEmail ? [{ email: menteeEmail }] : [],
-          conferenceData: {
-            createRequest: {
-              requestId: `mentor4all-${sessionId.substring(0, 8)}`,
-              conferenceSolutionKey: { 
-                type: "hangoutsMeet" 
-              }
-            }
-          }
-        })
+        body: JSON.stringify(calendarEventBody)
       });
 
       const calendarResponseStatus = calendarResponse.status;
       const calendarResponseText = await calendarResponse.text();
       
       console.log('Google Calendar API response status:', calendarResponseStatus);
-      console.log('Google Calendar API response:', calendarResponseText);
+      console.log('Google Calendar API full response:', calendarResponseText);
 
       if (!calendarResponse.ok) {
-        console.error('Google Calendar API error:', calendarResponseStatus, calendarResponseText);
+        console.error(`Google Calendar API error (${calendarResponseStatus}):`, calendarResponseText);
         
         // Token might be expired or invalid, fallback to creating a meeting URL manually
         if (calendarResponseStatus === 401) {
           console.log('Google OAuth token expired or invalid, using fallback method');
-          // We'll implement the fallback method later
+          // We'll implement the fallback method in the next section
         } else {
           return new Response(
             JSON.stringify({ 
@@ -172,39 +198,47 @@ Deno.serve(async (req) => {
         // Parse the response text to JSON
         const calendarData = JSON.parse(calendarResponseText);
         
-        console.log('Google Calendar event created:', JSON.stringify(calendarData));
+        console.log('Calendar event created successfully. Event ID:', calendarData.id);
         
         // Extract the Google Meet link
         const meetLink = calendarData.hangoutLink;
         
         if (!meetLink) {
           console.error('Google Calendar API did not return a hangoutLink', JSON.stringify(calendarData));
-          // Fallback to generating a meeting URL manually
-        } else {
-          // Store the Google Meet link in the session
-          const { error: updateError } = await supabase
-            .from('sessions')
-            .update({ meeting_url: meetLink })
-            .eq('id', sessionId);
-
-          if (updateError) {
-            console.error('Error updating session with meeting URL:', updateError);
-            return new Response(
-              JSON.stringify({ error: 'Failed to update session with meeting URL' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-
-          console.log(`Successfully created Google Meet link for session ${sessionId}: ${meetLink}`);
-
           return new Response(
             JSON.stringify({ 
-              meetingUrl: meetLink,
-              message: 'Google Meet link created successfully' 
+              error: 'Google Calendar event created but no meeting link was generated',
+              details: 'The conferenceData might not have been processed correctly'
             }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        
+        console.log('Extracted Google Meet link:', meetLink);
+        
+        // Store the Google Meet link in the session
+        const { error: updateError } = await supabase
+          .from('sessions')
+          .update({ meeting_url: meetLink })
+          .eq('id', sessionId);
+
+        if (updateError) {
+          console.error('Error updating session with meeting URL:', updateError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to update session with meeting URL' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        console.log(`Successfully created Google Meet link for session ${sessionId}: ${meetLink}`);
+
+        return new Response(
+          JSON.stringify({ 
+            meetingUrl: meetLink,
+            message: 'Google Meet link created successfully' 
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     } else {
       console.log('No valid Google OAuth token found for mentor', mentorId);
@@ -218,13 +252,15 @@ Deno.serve(async (req) => {
     console.log('Generating fallback meeting URL');
     
     // Generate a unique meeting ID based on the session ID and current timestamp
-    // Using a unique ID helps prevent conflicts and ensures the link is valid
     const timestamp = new Date().getTime().toString(36);
     const randomId = Math.random().toString(36).substring(2, 8);
     const meetingId = `m4a-${sessionId.substring(0, 6)}-${timestamp.substring(timestamp.length - 4)}-${randomId}`;
     
     // Format as a valid Google Meet URL
     const fallbackMeetingUrl = `https://meet.google.com/${meetingId}`;
+    
+    console.log(`WARNING: Using fallback meeting URL generation method: ${fallbackMeetingUrl}`);
+    console.log(`WARNING: This fallback URL might not be reliable!`);
     
     // Update the session with the fallback meeting URL
     const { error: updateError } = await supabase
@@ -240,12 +276,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Successfully created fallback meeting URL for session ${sessionId}: ${fallbackMeetingUrl}`);
+    console.log(`Updated session ${sessionId} with fallback meeting URL: ${fallbackMeetingUrl}`);
 
     return new Response(
       JSON.stringify({ 
         meetingUrl: fallbackMeetingUrl,
-        message: 'Fallback meeting URL created successfully' 
+        message: 'Fallback meeting URL created successfully',
+        warning: 'Fallback method used - this URL might not be reliable'
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
