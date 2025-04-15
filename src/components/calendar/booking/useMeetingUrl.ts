@@ -65,6 +65,8 @@ export const useMeetingUrl = () => {
         }
       });
 
+      console.log('Edge function response:', response);
+
       if (response.error) {
         console.error('Error creating Google Meet meeting:', response.error);
         toast({
@@ -75,7 +77,18 @@ export const useMeetingUrl = () => {
         throw new Error(response.error.message || 'Failed to create meeting');
       }
 
-      console.log('Successfully created Google Meet meeting:', response.data);
+      // Verify the response contains a valid meetingUrl
+      if (!response.data || !response.data.meetingUrl) {
+        console.error('Invalid response from create-google-meet function:', response.data);
+        toast({
+          title: "Error creating meeting",
+          description: "The server response did not contain a valid meeting URL",
+          variant: "destructive"
+        });
+        throw new Error('Invalid server response');
+      }
+
+      console.log('Successfully created Google Meet meeting:', response.data.meetingUrl);
       return response.data.meetingUrl;
     } catch (error) {
       console.error('Error in createMeetingUrl:', error);

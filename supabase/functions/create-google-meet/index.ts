@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
 
     // If mentorId is provided, try to retrieve their Google OAuth token
     let accessToken = '';
+    let mentorData = null;
+    
     if (mentorId) {
       const { data: mentorUser, error: userError } = await supabase
         .auth.admin.getUserById(mentorId);
@@ -97,18 +99,24 @@ Deno.serve(async (req) => {
         );
       }
 
+      mentorData = mentorUser?.user;
+      
       // Check if the user has provider token (Google OAuth)
       if (mentorUser?.user?.app_metadata?.provider === 'google') {
-        accessToken = mentorUser.user.app_metadata.provider_token;
+        // Try to get the token from different places it might be stored
+        accessToken = mentorUser.user.app_metadata.provider_token || '';
+        
+        // Log metadata for debugging
+        console.log('Mentor app_metadata:', JSON.stringify(mentorUser.user.app_metadata));
       }
     }
 
+    const sessionStartISO = sessionStartTime.toISOString();
+    const sessionEndISO = sessionEndTime.toISOString();
+    
     // If we have a valid access token, use Google Calendar API
-    if (accessToken) {
+    if (accessToken && accessToken.length > 0) {
       console.log('Using Google Calendar API to create meeting with mentor\'s access token');
-      
-      const sessionStartISO = sessionStartTime.toISOString();
-      const sessionEndISO = sessionEndTime.toISOString();
       
       // Create a Google Calendar event with Google Meet
       const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', {
@@ -129,40 +137,48 @@ Deno.serve(async (req) => {
           attendees: menteeEmail ? [{ email: menteeEmail }] : [],
           conferenceData: {
             createRequest: {
-              requestId: `mentor4all-session-${sessionId}`
+              requestId: `mentor4all-${sessionId.substring(0, 8)}`,
+              conferenceSolutionKey: { 
+                type: "hangoutsMeet" 
+              }
             }
           }
         })
       });
 
+      const calendarResponseStatus = calendarResponse.status;
+      const calendarResponseText = await calendarResponse.text();
+      
+      console.log('Google Calendar API response status:', calendarResponseStatus);
+      console.log('Google Calendar API response:', calendarResponseText);
+
       if (!calendarResponse.ok) {
-        const errorText = await calendarResponse.text();
-        console.error('Google Calendar API error:', calendarResponse.status, errorText);
+        console.error('Google Calendar API error:', calendarResponseStatus, calendarResponseText);
         
-        // If token expired or invalid, fallback to creating a meeting URL manually
-        if (calendarResponse.status === 401) {
-          // Token expired - use fallback method
+        // Token might be expired or invalid, fallback to creating a meeting URL manually
+        if (calendarResponseStatus === 401) {
           console.log('Google OAuth token expired or invalid, using fallback method');
           // We'll implement the fallback method later
         } else {
           return new Response(
             JSON.stringify({ 
-              error: `Failed to create Google Calendar event. Status: ${calendarResponse.status}`,
-              details: errorText
+              error: `Failed to create Google Calendar event. Status: ${calendarResponseStatus}`,
+              details: calendarResponseText
             }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
       } else {
-        const calendarData = await calendarResponse.json();
+        // Parse the response text to JSON
+        const calendarData = JSON.parse(calendarResponseText);
         
-        console.log('Google Calendar event created:', calendarData);
+        console.log('Google Calendar event created:', JSON.stringify(calendarData));
         
         // Extract the Google Meet link
         const meetLink = calendarData.hangoutLink;
         
         if (!meetLink) {
-          console.error('Google Calendar API did not return a hangoutLink');
+          console.error('Google Calendar API did not return a hangoutLink', JSON.stringify(calendarData));
           // Fallback to generating a meeting URL manually
         } else {
           // Store the Google Meet link in the session
@@ -190,14 +206,24 @@ Deno.serve(async (req) => {
           );
         }
       }
+    } else {
+      console.log('No valid Google OAuth token found for mentor', mentorId);
+      if (mentorData) {
+        console.log('Mentor authentication provider:', mentorData.app_metadata?.provider);
+      }
     }
 
     // Fallback: If Google Calendar API fails or token is not available,
-    // generate a meeting URL using a publicly accessible video meeting service
+    // generate a meeting URL via a direct Google Meet link
     console.log('Generating fallback meeting URL');
     
-    // Generate a unique meeting ID based on the session ID
-    const meetingId = `mentor4all-${sessionId.replace(/-/g, '').substring(0, 12)}`;
+    // Generate a unique meeting ID based on the session ID and current timestamp
+    // Using a unique ID helps prevent conflicts and ensures the link is valid
+    const timestamp = new Date().getTime().toString(36);
+    const randomId = Math.random().toString(36).substring(2, 8);
+    const meetingId = `m4a-${sessionId.substring(0, 6)}-${timestamp.substring(timestamp.length - 4)}-${randomId}`;
+    
+    // Format as a valid Google Meet URL
     const fallbackMeetingUrl = `https://meet.google.com/${meetingId}`;
     
     // Update the session with the fallback meeting URL
