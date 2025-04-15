@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     // If mentorId is provided, try to retrieve their Google OAuth token
     let accessToken = '';
     let mentorData = null;
+    let tokenSource = 'none';
     
     if (mentorId) {
       const { data: mentorUser, error: userError } = await supabase
@@ -103,16 +104,16 @@ Deno.serve(async (req) => {
 
       mentorData = mentorUser?.user;
       console.log('Retrieved mentor data. User ID:', mentorId);
+      console.log('Auth provider:', mentorData?.app_metadata?.provider);
       
       // Check if the user has provider token (Google OAuth)
       if (mentorData && mentorUser?.user?.app_metadata?.provider === 'google') {
         // Try to get the token from different places it might be stored
-        accessToken = mentorUser.user.app_metadata.provider_token || '';
-        
-        // Log metadata for debugging (mask part of the token for security)
-        console.log('Mentor auth provider:', mentorUser.user.app_metadata.provider);
-        if (accessToken) {
-          console.log('Found access token (first 10 chars):', accessToken.substring(0, 10) + '...');
+        if (mentorUser.user.app_metadata.provider_token) {
+          accessToken = mentorUser.user.app_metadata.provider_token;
+          tokenSource = 'app_metadata.provider_token';
+          console.log('Found access token in app_metadata.provider_token (first 10 chars):', 
+            accessToken.substring(0, 10) + '...');
         } else {
           console.log('No access token found in app_metadata.provider_token');
         }
@@ -120,9 +121,16 @@ Deno.serve(async (req) => {
         // Check other potential locations for the token
         if (!accessToken && mentorUser.user.identities && mentorUser.user.identities.length > 0) {
           const googleIdentity = mentorUser.user.identities.find(id => id.provider === 'google');
+          
+          console.log('Google identity object:', googleIdentity ? 
+            JSON.stringify({...googleIdentity, access_token: googleIdentity.access_token ? 
+              (googleIdentity.access_token.substring(0, 10) + '...') : null}) : 'Not found');
+          
           if (googleIdentity?.access_token) {
             accessToken = googleIdentity.access_token;
-            console.log('Found access token in identities (first 10 chars):', accessToken.substring(0, 10) + '...');
+            tokenSource = 'identities[].access_token';
+            console.log('Found access token in identities array (first 10 chars):', 
+              accessToken.substring(0, 10) + '...');
           }
         }
       } else {
@@ -136,9 +144,36 @@ Deno.serve(async (req) => {
     const sessionStartISO = sessionStartTime.toISOString();
     const sessionEndISO = sessionEndTime.toISOString();
     
+    // TEST: Force a hardcoded meeting URL to verify if the frontend handling works
+    // Uncomment this to test
+    /*
+    const hardcodedMeetUrl = "https://meet.google.com/abc-defg-hij";
+    console.log(`TESTING: Using hardcoded Google Meet URL: ${hardcodedMeetUrl}`);
+    
+    // Update the session with the hardcoded URL
+    const { error: updateTestError } = await supabase
+      .from('sessions')
+      .update({ meeting_url: hardcodedMeetUrl })
+      .eq('id', sessionId);
+
+    if (updateTestError) {
+      console.error('Error updating session with hardcoded URL:', updateTestError);
+    } else {
+      console.log(`Successfully updated session with hardcoded test URL: ${hardcodedMeetUrl}`);
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        meetingUrl: hardcodedMeetUrl,
+        message: 'TESTING: Hardcoded Google Meet URL set successfully' 
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    */
+    
     // If we have a valid access token, use Google Calendar API
     if (accessToken && accessToken.length > 0) {
-      console.log('Using Google Calendar API to create meeting with mentor\'s access token');
+      console.log(`Using Google Calendar API with token from source: ${tokenSource}`);
       
       // Create a Google Calendar event with Google Meet
       const calendarEventBody = {
@@ -162,39 +197,46 @@ Deno.serve(async (req) => {
       };
       
       console.log('Calendar API request body:', JSON.stringify(calendarEventBody));
+      console.log('Using access token (first 10 chars):', accessToken.substring(0, 10) + '...');
       
-      const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(calendarEventBody)
-      });
+      try {
+        const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(calendarEventBody)
+        });
 
-      const calendarResponseStatus = calendarResponse.status;
-      const calendarResponseText = await calendarResponse.text();
-      
-      console.log('Google Calendar API response status:', calendarResponseStatus);
-      console.log('Google Calendar API full response:', calendarResponseText);
-
-      if (!calendarResponse.ok) {
-        console.error(`Google Calendar API error (${calendarResponseStatus}):`, calendarResponseText);
+        const calendarResponseStatus = calendarResponse.status;
+        const calendarResponseText = await calendarResponse.text();
         
-        // Token might be expired or invalid, fallback to creating a meeting URL manually
-        if (calendarResponseStatus === 401) {
-          console.log('Google OAuth token expired or invalid, using fallback method');
-          // We'll implement the fallback method in the next section
-        } else {
-          return new Response(
-            JSON.stringify({ 
-              error: `Failed to create Google Calendar event. Status: ${calendarResponseStatus}`,
-              details: calendarResponseText
-            }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        console.log('Google Calendar API response status:', calendarResponseStatus);
+        console.log('Google Calendar API full response:', calendarResponseText);
+
+        if (!calendarResponse.ok) {
+          console.error(`Google Calendar API error (${calendarResponseStatus}):`, calendarResponseText);
+          
+          if (calendarResponseStatus === 401) {
+            return new Response(
+              JSON.stringify({ 
+                error: `Google authorization expired or invalid. Please reconnect your Google account.`,
+                details: calendarResponseText
+              }),
+              { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          } else {
+            return new Response(
+              JSON.stringify({ 
+                error: `Failed to create Google Calendar event. Status: ${calendarResponseStatus}`,
+                details: calendarResponseText
+              }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
-      } else {
+        
         // Parse the response text to JSON
         const calendarData = JSON.parse(calendarResponseText);
         
@@ -205,10 +247,17 @@ Deno.serve(async (req) => {
         
         if (!meetLink) {
           console.error('Google Calendar API did not return a hangoutLink', JSON.stringify(calendarData));
+          
+          // Check if there's conferenceData but no hangoutLink
+          if (calendarData.conferenceData) {
+            console.log('Conference data found but no hangoutLink:', JSON.stringify(calendarData.conferenceData));
+          }
+          
           return new Response(
             JSON.stringify({ 
               error: 'Google Calendar event created but no meeting link was generated',
-              details: 'The conferenceData might not have been processed correctly'
+              details: 'The conferenceData might not have been processed correctly',
+              calendarEventId: calendarData.id
             }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
@@ -235,9 +284,19 @@ Deno.serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             meetingUrl: meetLink,
-            message: 'Google Meet link created successfully' 
+            message: 'Google Meet link created successfully',
+            calendarEventId: calendarData.id
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (calendarError) {
+        console.error('Exception during Google Calendar API call:', calendarError);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Exception during Google Calendar API call',
+            details: calendarError.message 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     } else {

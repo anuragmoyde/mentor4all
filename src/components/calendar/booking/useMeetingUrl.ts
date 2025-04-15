@@ -65,7 +65,7 @@ export const useMeetingUrl = () => {
         }
       });
 
-      console.log('Edge function response:', response);
+      console.log('Edge function full response:', JSON.stringify(response));
 
       if (response.error) {
         console.error('Error creating Google Meet meeting:', response.error);
@@ -103,6 +103,8 @@ export const useMeetingUrl = () => {
 
       // Check if the URL is in the expected format for Google Meet
       const meetingUrl = response.data.meetingUrl;
+      console.log('Meeting URL format check:', meetingUrl);
+      
       if (!meetingUrl.startsWith('https://meet.google.com/')) {
         console.warn('Meeting URL does not appear to be a valid Google Meet URL:', meetingUrl);
         toast({
