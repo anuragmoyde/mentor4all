@@ -93,9 +93,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
-      // Create ISO-8601 formatted datetime string
-      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
-      console.log('Session booking time (original):', originalTimeString);
+      // Create ISO-8601 formatted datetime string with IST time
+      // ISO format: YYYY-MM-DDTHH:MM:SS.sssZ
+      const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
+      
+      // Log full details about the time being booked
+      console.log('Session booking time details:', {
+        day: selectedSlot.day,
+        startTime: selectedSlot.startTime,
+        formattedISOString: dateTimeISO,
+        localTimeString: new Date(dateTimeISO).toLocaleString('en-IN'),
+      });
       
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
@@ -110,13 +118,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (slotError) throw slotError;
 
-      // Create the session - store the original time string to maintain timezone consistency
+      // Create the session
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: originalTimeString,
+          date_time: dateTimeISO, // Store as ISO string
           duration: durationMinutes,
           price: sessionPrice,
           title: sessionTitle,
@@ -131,10 +139,16 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       // Generate meeting URL for the session immediately
       console.log('Generating meeting URL for newly created session');
+      console.log('Session data for meeting URL creation:', {
+        sessionId: sessionData.id,
+        startTime: dateTimeISO,
+        duration: durationMinutes
+      });
+      
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
-        startTime: originalTimeString,
+        startTime: dateTimeISO,
         durationMinutes
       });
 

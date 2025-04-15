@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
 
 interface SessionsData {
   upcoming: any[];
@@ -13,7 +14,7 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [pastSessions, setPastSessions] = useState<any[]>([]);
   const [dashboardLoading, setDashboardLoading] = useState(true);
-  const { toast } = useToast(); // Properly destructure toast from useToast hook
+  const { toast } = useToast();
 
   const { data: sessionsData, isLoading: sessionsLoading, error: sessionsError } = useQuery({
     queryKey: ['mentee-sessions', userId],
@@ -27,6 +28,7 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
       
       try {
         const now = new Date().toISOString();
+        console.log('Current time for sessions query (ISO):', now);
         
         // Fetch upcoming sessions
         const { data: upcoming, error: upcomingError } = await supabase
@@ -78,10 +80,26 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
         console.log('Raw past sessions:', past);
         
         // Process the sessions to preserve the original time strings
-        const processedUpcoming = upcoming?.map(session => ({
-          ...session,
-          original_time_string: session.date_time
-        })) || [];
+        const processedUpcoming = upcoming?.map(session => {
+          // Log session time information for debugging
+          try {
+            const dateTimeISO = session.date_time;
+            const dateTime = new Date(dateTimeISO);
+            console.log(`Session ${session.id} time details:`, {
+              rawDateTime: dateTimeISO,
+              parsedDateTime: dateTime.toString(),
+              localDateString: dateTime.toLocaleDateString('en-IN'),
+              localTimeString: dateTime.toLocaleTimeString('en-IN')
+            });
+          } catch (e) {
+            console.error('Error logging session time details:', e);
+          }
+          
+          return {
+            ...session,
+            original_time_string: session.date_time
+          };
+        }) || [];
         
         const processedPast = past?.map(session => ({
           ...session,

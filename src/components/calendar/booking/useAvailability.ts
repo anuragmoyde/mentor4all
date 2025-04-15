@@ -16,6 +16,7 @@ export const useAvailability = (mentorId: string) => {
       
       // Get current date and time in IST
       const now = new Date();
+      console.log('Current time in local timezone:', now.toString());
       
       // Format date as YYYY-MM-DD for database query
       const currentDate = now.toISOString().split('T')[0];
@@ -25,7 +26,7 @@ export const useAvailability = (mentorId: string) => {
       const currentMinute = now.getMinutes();
       const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
       
-      console.log('Current date:', currentDate, 'Current time:', currentTimeString);
+      console.log('Current date for filtering:', currentDate, 'Current time:', currentTimeString);
       
       const { data, error } = await supabase
         .from('mentor_availability')

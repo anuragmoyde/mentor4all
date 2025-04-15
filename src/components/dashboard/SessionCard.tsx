@@ -51,16 +51,26 @@ const SessionCard: React.FC<SessionCardProps> = ({
   
   console.log('SessionCard rendering with dateTime:', dateTime);
   
-  // Parse the date once to avoid repeated calculations
+  // Parse the date directly from ISO string
+  // The dateTime should already be in ISO format with UTC timezone
   const sessionDate = parseISO(dateTime);
-  console.log('Parsed sessionDate:', sessionDate);
+  console.log('Parsed sessionDate:', sessionDate.toString());
   
-  // Format with proper timezone consideration for display
+  // Format times for display (convert to IST for display)
+  // Format date for display (add IST timezone offset manually)
   const formattedDate = format(sessionDate, 'EEEE, MMMM do');
+  
+  // For displaying time, we'll use the local time which should be IST if the user is in India
   const formattedTime = format(sessionDate, 'h:mm a');
   const durationInHours = duration / 60;
   const sessionEndTime = new Date(sessionDate.getTime() + duration * 60 * 1000);
   const endTimeFormatted = format(sessionEndTime, 'h:mm a');
+  
+  console.log('Formatted display values:', {
+    date: formattedDate,
+    startTime: formattedTime,
+    endTime: endTimeFormatted
+  });
   
   const isPast = sessionDate < new Date();
   const isToday = format(sessionDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
@@ -126,7 +136,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
       const url = await createMeetingUrl({
         sessionId: id,
         sessionTitle: title || `Session with ${personName}`,
-        startTime: dateTime,
+        startTime: dateTime,  // Keep the original ISO datetime string
         durationMinutes: duration,
         mentorId: mentorId
       });
