@@ -24,6 +24,8 @@ export const useMeetingUrl = () => {
   }: CreateMeetingParams) => {
     try {
       console.log('Creating Google Meet URL for session:', sessionId);
+      console.log('Session start time (original):', startTime);
+      
       const token = await supabase.auth.getSession();
       if (!token.data.session) {
         console.error('No auth session found');
@@ -93,7 +95,7 @@ export const useMeetingUrl = () => {
         toast({
           title: "Meeting link issue",
           description: warningMessage,
-          variant: "default" // Changed from "warning" to "default"
+          variant: "default"
         });
         
         if (!response.data?.meetingUrl) {
@@ -110,7 +112,7 @@ export const useMeetingUrl = () => {
         toast({
           title: "Warning",
           description: "Generated meeting URL might not be a valid Google Meet link",
-          variant: "default" // Changed from "warning" to "default"
+          variant: "default"
         });
       }
 

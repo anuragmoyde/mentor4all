@@ -33,8 +33,15 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
   
   const getSlotsForDate = (date: Date | undefined) => {
     if (!date) return [];
+    // Format the date consistently
     const formattedDate = format(date, 'yyyy-MM-dd');
-    return availableSlots.filter(slot => slot.day === formattedDate);
+    console.log('Getting slots for date:', formattedDate);
+    
+    // Filter slots for the selected date
+    const slotsForDate = availableSlots.filter(slot => slot.day === formattedDate);
+    console.log('Found slots for date:', slotsForDate);
+    
+    return slotsForDate;
   };
 
   const moveToSessionDetails = () => {
@@ -123,10 +130,22 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
                         {hourlyRate > 0 && (
                           <span className="text-xs text-slate-500">
                             {(() => {
-                              const startTime = new Date(`2000-01-01T${slot.startTime}`);
-                              const endTime = new Date(`2000-01-01T${slot.endTime}`);
-                              const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+                              // Calculate duration using the time strings directly
+                              const startTimeParts = slot.startTime.split(':').map(Number);
+                              const endTimeParts = slot.endTime.split(':').map(Number);
+                              
+                              // Create date objects with the same date but different times
+                              const baseDate = new Date(2000, 0, 1);
+                              const startDate = new Date(baseDate);
+                              startDate.setHours(startTimeParts[0], startTimeParts[1], 0);
+                              
+                              const endDate = new Date(baseDate);
+                              endDate.setHours(endTimeParts[0], endTimeParts[1], 0);
+                              
+                              // Calculate duration in minutes
+                              const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
                               const price = (hourlyRate / 60) * durationMinutes;
+                              
                               return `₹${price.toFixed(2)} · ${durationMinutes} minutes`;
                             })()}
                           </span>

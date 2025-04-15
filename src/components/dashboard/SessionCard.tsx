@@ -49,11 +49,13 @@ const SessionCard: React.FC<SessionCardProps> = ({
   const { toast } = useToast();
   const { createMeetingUrl } = useMeetingUrl();
   
-  // Parse the date once to avoid repeated calculations and time zone issues
-  // Use the original time string to avoid timezone issues
-  const sessionDate = parseISO(dateTime);
+  console.log('SessionCard rendering with dateTime:', dateTime);
   
-  // Format with IST timezone consideration
+  // Parse the date once to avoid repeated calculations
+  const sessionDate = parseISO(dateTime);
+  console.log('Parsed sessionDate:', sessionDate);
+  
+  // Format with proper timezone consideration for display
   const formattedDate = format(sessionDate, 'EEEE, MMMM do');
   const formattedTime = format(sessionDate, 'h:mm a');
   const durationInHours = duration / 60;
@@ -120,6 +122,7 @@ const SessionCard: React.FC<SessionCardProps> = ({
       setIsGeneratingLink(true);
       console.log('Generating meeting link for session:', id);
       
+      // Pass the original date time string to maintain timezone consistency
       const url = await createMeetingUrl({
         sessionId: id,
         sessionTitle: title || `Session with ${personName}`,

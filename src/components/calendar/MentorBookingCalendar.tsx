@@ -95,6 +95,10 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
+      // Create ISO-8601 formatted datetime string with seconds
+      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
+      console.log('Session booking time (original):', originalTimeString);
+
       // Calculate session price based on hourly rate and duration
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
@@ -109,13 +113,13 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (slotError) throw slotError;
 
-      // Create the session
+      // Create the session with the original time string to maintain consistency
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: `${selectedSlot.day}T${selectedSlot.startTime}`,
+          date_time: originalTimeString,
           duration: durationMinutes,
           price: sessionPrice,
           title: sessionTitle,
@@ -132,7 +136,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
-        startTime: `${selectedSlot.day}T${selectedSlot.startTime}`,
+        startTime: originalTimeString,
         durationMinutes
       });
 
@@ -144,9 +148,16 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
           .eq('id', sessionData.id);
       }
 
+      // Format date for display in toast notification
+      const formattedDate = slotDateTime.toLocaleDateString('en-IN', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      });
+
       toast({
         title: "Session booked successfully!",
-        description: `Your session with ${mentorName} is scheduled for ${format(new Date(selectedSlot.day), "EEEE, MMMM d")} at ${selectedSlot.startTime}.`,
+        description: `Your session with ${mentorName} is scheduled for ${formattedDate} at ${selectedSlot.startTime}.`,
       });
 
       // Refresh availability to reflect the changes

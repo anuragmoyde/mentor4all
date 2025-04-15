@@ -16,7 +16,11 @@ export const useAvailability = (mentorId: string) => {
       
       // Get current date and time in IST
       const now = new Date();
+      
+      // Format date as YYYY-MM-DD for database query
       const currentDate = now.toISOString().split('T')[0];
+      
+      // Get current time in 24-hour format (HH:MM)
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;

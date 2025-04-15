@@ -93,6 +93,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
+      // Create ISO-8601 formatted datetime string
+      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
+      console.log('Session booking time (original):', originalTimeString);
+      
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
@@ -107,7 +111,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       if (slotError) throw slotError;
 
       // Create the session - store the original time string to maintain timezone consistency
-      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}`;
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
@@ -145,9 +148,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         console.warn('Could not generate meeting URL during booking');
       }
 
+      // Format date for display in toast
+      const formattedDate = slotDateTime.toLocaleDateString('en-IN', {
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+      });
+      
       toast({
         title: "Session booked successfully!",
-        description: `Your session with ${mentorName} is scheduled for ${new Date(selectedSlot.day).toLocaleDateString()} at ${selectedSlot.startTime}.`,
+        description: `Your session with ${mentorName} is scheduled for ${formattedDate} at ${selectedSlot.startTime}.`,
       });
 
       // Refresh availability to reflect the changes
