@@ -2,7 +2,7 @@
 import React from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, ArrowRight, Calendar as CalendarIcon } from "lucide-react";
+import { Check, Clock, ArrowRight, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { AvailabilitySlot } from "../types";
@@ -97,25 +97,19 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
                   backgroundColor: "rgba(59, 130, 246, 0.1)",
                 }
               }}
-              styles={{
-                day_selected: {
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  fontWeight: "600",
-                },
-                day_today: {
-                  borderColor: "#3b82f6",
-                  borderWidth: "1px",
-                  backgroundColor: "transparent",
-                  color: "#3b82f6",
-                  fontWeight: "600",
-                }
+              components={{
+                IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,
+                IconRight: ({ ..._props }) => <ChevronRight className="h-4 w-4" />,
               }}
               disabled={(date) => 
                 date < new Date() || 
                 !isDayWithSlots(date)
               }
               fromDate={new Date()}
+              classNames={{
+                day_selected: "bg-primary text-white font-semibold",
+                day_today: "border border-primary bg-transparent text-primary font-semibold"
+              }}
             />
           </div>
         )}
