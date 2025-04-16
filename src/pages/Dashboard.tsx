@@ -52,20 +52,24 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-12 px-4 md:px-6">
-      <DashboardHeader 
-        title="Dashboard" 
-        subtitle="Welcome back,"
-        userFirstName={profile?.first_name}
-      />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dashboard-pattern">
+      <div className="container mx-auto py-12 px-4 md:px-6">
+        <DashboardHeader 
+          title="Dashboard" 
+          subtitle="Welcome back,"
+          userFirstName={profile?.first_name}
+        />
 
-      <DashboardContent
-        dashboardLoading={dashboardLoading}
-        sessionsLoading={sessionsLoading}
-        upcomingSessions={upcomingSessions}
-        pastSessions={pastSessions}
-        onRefresh={refreshDashboard}
-      />
+        <div className="mt-8">
+          <DashboardContent
+            dashboardLoading={dashboardLoading}
+            sessionsLoading={sessionsLoading}
+            upcomingSessions={upcomingSessions}
+            pastSessions={pastSessions}
+            onRefresh={refreshDashboard}
+          />
+        </div>
+      </div>
     </div>
   );
 };

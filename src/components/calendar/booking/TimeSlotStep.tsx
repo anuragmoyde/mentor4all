@@ -2,7 +2,7 @@
 import React from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, ArrowRight } from "lucide-react";
+import { Check, Clock, ArrowRight, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { AvailabilitySlot } from "../types";
@@ -69,95 +69,124 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div>
-        <p className="text-sm font-medium mb-2">1. Select a date</p>
+        <p className="text-sm font-medium mb-2 flex items-center gap-1.5 text-gray-800">
+          <CalendarIcon className="h-4 w-4 text-primary" />
+          Select a date
+        </p>
         {isLoading ? (
-          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-md">
-            <div className="animate-pulse">Loading availability...</div>
+          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-12 w-12 bg-gray-200 rounded-full mb-2"></div>
+              <div className="h-4 w-32 bg-gray-200 rounded-full"></div>
+            </div>
           </div>
         ) : (
-          <Calendar 
-            mode="single" 
-            selected={selectedDate} 
-            onSelect={setSelectedDate}
-            className="rounded-md border shadow-sm pointer-events-auto"
-            modifiers={{
-              available: (date) => isDayWithSlots(date),
-            }}
-            modifiersStyles={{
-              available: { 
-                backgroundColor: "rgba(52, 211, 153, 0.1)",
-                border: "2px solid rgba(52, 211, 153, 0.5)" 
+          <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <Calendar 
+              mode="single" 
+              selected={selectedDate} 
+              onSelect={setSelectedDate}
+              className="rounded-md p-0"
+              modifiers={{
+                available: (date) => isDayWithSlots(date),
+              }}
+              modifiersStyles={{
+                available: { 
+                  color: "#3b82f6",
+                  fontWeight: "600",
+                  backgroundColor: "rgba(59, 130, 246, 0.1)",
+                }
+              }}
+              styles={{
+                day_selected: {
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  fontWeight: "600",
+                },
+                day_today: {
+                  borderColor: "#3b82f6",
+                  borderWidth: "1px",
+                  backgroundColor: "transparent",
+                  color: "#3b82f6",
+                  fontWeight: "600",
+                }
+              }}
+              disabled={(date) => 
+                date < new Date() || 
+                !isDayWithSlots(date)
               }
-            }}
-            disabled={(date) => 
-              date < new Date() || 
-              !isDayWithSlots(date)
-            }
-            fromDate={new Date()}
-          />
+              fromDate={new Date()}
+            />
+          </div>
         )}
       </div>
       
       <div>
-        <p className="text-sm font-medium mb-2 flex items-center gap-1">
-          <Clock className="h-4 w-4" />
-          2. Choose an available time slot
+        <p className="text-sm font-medium mb-2 flex items-center gap-1.5 text-gray-800">
+          <Clock className="h-4 w-4 text-primary" />
+          Choose an available time slot
         </p>
         
         {selectedDate && (
           <div className="mt-2">
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium text-gray-800 mb-3">
               {format(selectedDate, "EEEE, MMMM d, yyyy")}
             </p>
             {slotsForSelectedDate.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3 mt-3 max-h-[300px] overflow-y-auto pr-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-3 mt-3 max-h-[300px] overflow-y-auto pr-2">
                 {slotsForSelectedDate
                   .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                  .map((slot, index) => (
-                  <motion.div
-                    key={slot.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                  >
-                    <Button
-                      variant={selectedSlot?.id === slot.id ? "default" : "outline"}
-                      className="w-full justify-between p-3 h-auto"
-                      onClick={() => handleSlotSelect(slot)}
+                  .map((slot, index) => {
+                  
+                  // Calculate duration and price
+                  const startTimeParts = slot.startTime.split(':').map(Number);
+                  const endTimeParts = slot.endTime.split(':').map(Number);
+                  
+                  const baseDate = new Date(2000, 0, 1);
+                  const startDate = new Date(baseDate);
+                  startDate.setHours(startTimeParts[0], startTimeParts[1], 0);
+                  
+                  const endDate = new Date(baseDate);
+                  endDate.setHours(endTimeParts[0], endTimeParts[1], 0);
+                  
+                  const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
+                  const price = (hourlyRate / 60) * durationMinutes;
+                  
+                  const isSelected = selectedSlot?.id === slot.id;
+                  
+                  return (
+                    <motion.div
+                      key={slot.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
                     >
-                      <span className="flex flex-col items-start">
-                        <span className="font-medium">{slot.startTime} - {slot.endTime}</span>
-                        {hourlyRate > 0 && (
-                          <span className="text-xs text-slate-500">
-                            {(() => {
-                              // Calculate duration using the time strings directly
-                              const startTimeParts = slot.startTime.split(':').map(Number);
-                              const endTimeParts = slot.endTime.split(':').map(Number);
-                              
-                              // Create date objects with the same date but different times
-                              const baseDate = new Date(2000, 0, 1);
-                              const startDate = new Date(baseDate);
-                              startDate.setHours(startTimeParts[0], startTimeParts[1], 0);
-                              
-                              const endDate = new Date(baseDate);
-                              endDate.setHours(endTimeParts[0], endTimeParts[1], 0);
-                              
-                              // Calculate duration in minutes
-                              const durationMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
-                              const price = (hourlyRate / 60) * durationMinutes;
-                              
-                              return `₹${price.toFixed(2)} · ${durationMinutes} minutes`;
-                            })()}
-                          </span>
-                        )}
-                      </span>
-                      {selectedSlot?.id === slot.id && <Check className="h-4 w-4" />}
-                    </Button>
-                  </motion.div>
-                ))}
+                      <button
+                        className={`w-full text-left px-4 py-3 rounded-lg border ${
+                          isSelected 
+                            ? 'bg-primary text-white border-primary' 
+                            : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-primary/30'
+                        } transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2`}
+                        onClick={() => handleSlotSelect(slot)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className={`font-medium ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                              {slot.startTime} - {slot.endTime}
+                            </div>
+                            <div className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                              ₹{price.toFixed(2)} · {durationMinutes} minutes
+                            </div>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 text-white" />}
+                        </div>
+                      </button>
+                    </motion.div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="flex items-center justify-center p-8 border border-dashed rounded-md">
+              <div className="flex items-center justify-center p-8 border border-dashed rounded-lg bg-gray-50">
                 <p className="text-sm text-muted-foreground">No time slots available for this date</p>
               </div>
             )}
@@ -165,7 +194,7 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
         )}
         
         {!selectedDate && (
-          <div className="flex items-center justify-center p-8 border border-dashed rounded-md">
+          <div className="flex items-center justify-center p-8 border border-dashed rounded-lg bg-gray-50">
             <p className="text-sm text-muted-foreground">Select a date to see available time slots</p>
           </div>
         )}
@@ -173,7 +202,10 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
       
       {selectedSlot && (
         <div className="col-span-1 md:col-span-2 flex justify-end mt-4">
-          <Button onClick={moveToSessionDetails}>
+          <Button 
+            onClick={moveToSessionDetails}
+            className="bg-primary hover:bg-primary/90 text-white font-medium"
+          >
             Continue to Session Details
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>

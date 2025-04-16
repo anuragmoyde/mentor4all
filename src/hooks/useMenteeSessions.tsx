@@ -27,6 +27,7 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
       }
       
       try {
+        // Get current time in ISO format
         const now = new Date().toISOString();
         console.log('Current time for sessions query (ISO):', now);
         
@@ -79,36 +80,9 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
         console.log('Raw upcoming sessions:', upcoming);
         console.log('Raw past sessions:', past);
         
-        // Process the sessions to preserve the original time strings
-        const processedUpcoming = upcoming?.map(session => {
-          // Log session time information for debugging
-          try {
-            const dateTimeISO = session.date_time;
-            const dateTime = new Date(dateTimeISO);
-            console.log(`Session ${session.id} time details:`, {
-              rawDateTime: dateTimeISO,
-              parsedDateTime: dateTime.toString(),
-              localDateString: dateTime.toLocaleDateString('en-IN'),
-              localTimeString: dateTime.toLocaleTimeString('en-IN')
-            });
-          } catch (e) {
-            console.error('Error logging session time details:', e);
-          }
-          
-          return {
-            ...session,
-            original_time_string: session.date_time
-          };
-        }) || [];
-        
-        const processedPast = past?.map(session => ({
-          ...session,
-          original_time_string: session.date_time
-        })) || [];
-        
         return { 
-          upcoming: processedUpcoming, 
-          past: processedPast 
+          upcoming: upcoming || [], 
+          past: past || [] 
         };
       } catch (error) {
         console.error('Error in session query:', error);

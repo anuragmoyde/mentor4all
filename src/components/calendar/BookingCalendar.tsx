@@ -93,16 +93,16 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
-      // Create ISO-8601 formatted datetime string with IST time
-      // ISO format: YYYY-MM-DDTHH:MM:SS.sssZ
+      // Create ISO-8601 formatted datetime string
       const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
       
-      // Log full details about the time being booked
+      // Log details about the time being booked
       console.log('Session booking time details:', {
         day: selectedSlot.day,
         startTime: selectedSlot.startTime,
         formattedISOString: dateTimeISO,
-        localTimeString: new Date(dateTimeISO).toLocaleString('en-IN'),
+        localTimeString: new Date(dateTimeISO).toLocaleString(),
+        localTimeStringIndia: new Date(dateTimeISO).toLocaleString('en-IN'),
       });
       
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);

@@ -68,6 +68,7 @@ const MentorDashboard = () => {
       if (!user) return { upcoming: [], past: [] };
       
       const now = new Date().toISOString();
+      console.log('Current time for mentor sessions query:', now);
       
       // Fetch upcoming sessions
       const { data: upcoming, error: upcomingError } = await supabase
@@ -106,6 +107,9 @@ const MentorDashboard = () => {
       if (pastError) {
         console.error('Error fetching past sessions:', pastError);
       }
+      
+      console.log('Mentor upcoming sessions:', upcoming);
+      console.log('Mentor past sessions:', past);
       
       return { 
         upcoming: upcoming || [], 
