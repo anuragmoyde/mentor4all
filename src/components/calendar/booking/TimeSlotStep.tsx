@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { AvailabilitySlot } from "../types";
 import { useToast } from '@/hooks/use-toast';
+import { cn } from "@/lib/utils";
 
 interface TimeSlotStepProps {
   selectedDate: Date | undefined;
@@ -37,8 +38,11 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
     const formattedDate = format(date, 'yyyy-MM-dd');
     console.log('Getting slots for date:', formattedDate);
     
-    // Filter slots for the selected date
-    const slotsForDate = availableSlots.filter(slot => slot.day === formattedDate);
+    // Filter slots for the selected date that are not booked
+    const slotsForDate = availableSlots.filter(slot => 
+      slot.day === formattedDate && !slot.isBooked
+    );
+    
     console.log('Found slots for date:', slotsForDate);
     
     return slotsForDate;
@@ -57,8 +61,9 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
   };
 
   const isDayWithSlots = (date: Date) => {
+    // Check if the date has any available slots that are not booked
     return availableSlots.some(slot => 
-      slot.day === format(date, 'yyyy-MM-dd')
+      slot.day === format(date, 'yyyy-MM-dd') && !slot.isBooked
     );
   };
 
@@ -156,12 +161,15 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                     >
                       <button
-                        className={`w-full text-left px-4 py-3 rounded-lg border ${
+                        className={cn(
+                          "w-full text-left px-4 py-3 rounded-lg border",
                           isSelected 
                             ? 'bg-primary text-white border-primary' 
-                            : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-primary/30'
-                        } transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2`}
+                            : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-primary/30',
+                          "transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2"
+                        )}
                         onClick={() => handleSlotSelect(slot)}
+                        disabled={slot.isBooked}
                       >
                         <div className="flex justify-between items-center">
                           <div>

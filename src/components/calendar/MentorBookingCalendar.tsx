@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -95,9 +94,15 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
-      // Create ISO-8601 formatted datetime string with seconds
-      const originalTimeString = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
-      console.log('Session booking time (original):', originalTimeString);
+      // Create ISO-8601 formatted datetime string
+      const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
+      
+      console.log('Session booking time details:', {
+        day: selectedSlot.day,
+        startTime: selectedSlot.startTime,
+        formattedISOString: dateTimeISO,
+        localTimeString: new Date(dateTimeISO).toLocaleString(),
+      });
 
       // Calculate session price based on hourly rate and duration
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
@@ -105,13 +110,15 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // Mark the slot as booked first to prevent double bookings
+      // IMPORTANT: Mark the slot as booked first to prevent double bookings
       const { error: slotError } = await supabase
         .from('mentor_availability')
         .update({ is_booked: true })
         .eq('id', selectedSlot.id);
 
       if (slotError) throw slotError;
+      
+      console.log('Slot marked as booked:', selectedSlot.id);
 
       // Create the session with the original time string to maintain consistency
       const { data: sessionData, error: sessionError } = await supabase
@@ -119,7 +126,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: originalTimeString,
+          date_time: dateTimeISO,
           duration: durationMinutes,
           price: sessionPrice,
           title: sessionTitle,
@@ -136,7 +143,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
-        startTime: originalTimeString,
+        startTime: dateTimeISO,
         durationMinutes
       });
 

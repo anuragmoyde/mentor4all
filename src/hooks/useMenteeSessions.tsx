@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
 
 interface SessionsData {
   upcoming: any[];
@@ -80,9 +78,23 @@ export const useMenteeSessions = (userId: string | undefined, userType: string |
         console.log('Raw upcoming sessions:', upcoming);
         console.log('Raw past sessions:', past);
         
+        // Process the session times to normalize them for display
+        const processedUpcoming = upcoming?.map(session => ({
+          ...session,
+          // Store the original date_time for database operations
+          original_date_time: session.date_time,
+          // Store the normalized date_time for display - we keep the UTC time as is
+          // since the SessionCard component will handle the correct display
+        })) || [];
+        
+        const processedPast = past?.map(session => ({
+          ...session,
+          original_date_time: session.date_time,
+        })) || [];
+        
         return { 
-          upcoming: upcoming || [], 
-          past: past || [] 
+          upcoming: processedUpcoming, 
+          past: processedPast 
         };
       } catch (error) {
         console.error('Error in session query:', error);

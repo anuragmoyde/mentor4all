@@ -4,13 +4,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MessageCircle, Video, ExternalLink, ArrowUpRight } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addMinutes } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAvailability } from '../calendar/booking/useAvailability';
 import { useMeetingUrl } from '../calendar/booking/useMeetingUrl';
 
 interface SessionCardProps {
@@ -51,17 +50,25 @@ const SessionCard: React.FC<SessionCardProps> = ({
   
   console.log('SessionCard rendering with dateTime:', dateTime);
   
-  // Parse the date directly from ISO string
-  const sessionDate = parseISO(dateTime);
-  console.log('Parsed sessionDate:', sessionDate.toString(), 'Raw dateTime:', dateTime);
+  // Parse the ISO date string to a Date object (in UTC)
+  const sessionDateUTC = parseISO(dateTime);
   
-  // Format date for display (using local timezone which should be IST in India)
-  const formattedDate = format(sessionDate, 'EEEE, MMMM do');
+  // Add IST offset (UTC+5:30 = 330 minutes) to get IST time
+  const sessionDateIST = addMinutes(sessionDateUTC, 330);
   
-  // Format time for display in IST
-  const formattedTime = format(sessionDate, 'h:mm a');
+  console.log('Session date:', {
+    originalISOString: dateTime,
+    parsedUTC: sessionDateUTC.toISOString(),
+    adjustedToIST: sessionDateIST.toISOString(),
+    localDisplay: sessionDateIST.toString(),
+  });
+  
+  // Format date for display - use the adjusted IST date
+  const formattedDate = format(sessionDateIST, 'EEEE, MMMM do');
+  const formattedTime = format(sessionDateIST, 'h:mm a');
+  
   const durationInHours = duration / 60;
-  const sessionEndTime = new Date(sessionDate.getTime() + duration * 60 * 1000);
+  const sessionEndTime = new Date(sessionDateIST.getTime() + duration * 60 * 1000);
   const endTimeFormatted = format(sessionEndTime, 'h:mm a');
   
   console.log('Formatted display values:', {
@@ -70,12 +77,12 @@ const SessionCard: React.FC<SessionCardProps> = ({
     endTime: endTimeFormatted
   });
   
-  const isPast = sessionDate < new Date();
-  const isToday = format(sessionDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+  const isPast = sessionDateIST < new Date();
+  const isToday = format(sessionDateIST, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
   
   // Calculate if the meeting is active (15 min before start until end)
   const now = new Date();
-  const sessionStart = sessionDate;
+  const sessionStart = sessionDateIST;
   const sessionEnd = sessionEndTime;
   const bufferTime = 15 * 60 * 1000; // 15 minutes in milliseconds
   const isActive = now >= new Date(sessionStart.getTime() - bufferTime) && now <= sessionEnd;

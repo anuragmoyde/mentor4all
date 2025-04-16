@@ -14,25 +14,29 @@ export const useAvailability = (mentorId: string) => {
     try {
       console.log('Fetching availability for mentor:', mentorId);
       
-      // Get current date and time in IST
+      // Get current date and time in local timezone (which should be IST for Indian users)
       const now = new Date();
-      console.log('Current time in local timezone:', now.toString());
       
-      // Format date as YYYY-MM-DD for database query
+      // Format date as YYYY-MM-DD for database query (in local timezone)
       const currentDate = now.toISOString().split('T')[0];
       
-      // Get current time in 24-hour format (HH:MM)
+      // Get current time in 24-hour format (HH:MM) in local timezone
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       const currentTimeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
       
-      console.log('Current date for filtering:', currentDate, 'Current time:', currentTimeString);
+      console.log('Current date and time for filtering:', {
+        date: currentDate,
+        time: currentTimeString,
+        fullDate: now.toString(),
+        timezoneOffset: now.getTimezoneOffset()
+      });
       
       const { data, error } = await supabase
         .from('mentor_availability')
         .select('*')
         .eq('mentor_id', mentorId)
-        .eq('is_booked', false)
+        .eq('is_booked', false) // Only get slots that are not booked
         .gte('day', currentDate); // Only fetch future dates
 
       if (error) throw error;

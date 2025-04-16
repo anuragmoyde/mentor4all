@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,7 +92,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
-      // Create ISO-8601 formatted datetime string
+      // Create ISO-8601 formatted datetime string - store in UTC
       const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
       
       // Log details about the time being booked
@@ -102,15 +101,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         startTime: selectedSlot.startTime,
         formattedISOString: dateTimeISO,
         localTimeString: new Date(dateTimeISO).toLocaleString(),
-        localTimeStringIndia: new Date(dateTimeISO).toLocaleString('en-IN'),
       });
       
+      // Calculate duration and price
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // Mark the slot as booked first to prevent double bookings
+      // IMPORTANT: Mark the slot as booked first to prevent double bookings
       const { error: slotError } = await supabase
         .from('mentor_availability')
         .update({ is_booked: true })
@@ -118,13 +117,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       if (slotError) throw slotError;
 
+      console.log('Slot marked as booked:', selectedSlot.id);
+
       // Create the session
       const { data: sessionData, error: sessionError } = await supabase
         .from('sessions')
         .insert({
           mentor_id: mentorId,
           mentee_id: user.id,
-          date_time: dateTimeISO, // Store as ISO string
+          date_time: dateTimeISO, // Store as ISO string in UTC
           duration: durationMinutes,
           price: sessionPrice,
           title: sessionTitle,
@@ -139,11 +140,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
       // Generate meeting URL for the session immediately
       console.log('Generating meeting URL for newly created session');
-      console.log('Session data for meeting URL creation:', {
-        sessionId: sessionData.id,
-        startTime: dateTimeISO,
-        duration: durationMinutes
-      });
       
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
