@@ -72,7 +72,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setIsBooking(true);
 
     try {
-      // First, check if the slot is still available
+      // CRITICAL: First, check if the slot is still available
+      // This prevents double bookings by checking the current state in the database
       const { data: slotCheck, error: slotCheckError } = await supabase
         .from('mentor_availability')
         .select('is_booked')
@@ -81,6 +82,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         
       if (slotCheckError) throw slotCheckError;
       
+      // If the slot is already booked, show an error and refresh the availability
       if (slotCheck.is_booked) {
         toast({
           title: "Time slot unavailable",
@@ -109,7 +111,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // IMPORTANT: Mark the slot as booked first to prevent double bookings
+      // IMPORTANT CHANGE: Mark the slot as booked first to prevent double bookings
       const { error: slotError } = await supabase
         .from('mentor_availability')
         .update({ is_booked: true })
@@ -158,7 +160,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         console.warn('Could not generate meeting URL during booking');
       }
 
-      // Format date for display in toast
+      // Format date for display in toast - using the browser's timezone
       const formattedDate = slotDateTime.toLocaleDateString('en-IN', {
         weekday: 'long', 
         year: 'numeric', 

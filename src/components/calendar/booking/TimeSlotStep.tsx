@@ -95,12 +95,8 @@ const TimeSlotStep: React.FC<TimeSlotStepProps> = ({
               modifiers={{
                 available: (date) => isDayWithSlots(date),
               }}
-              modifiersStyles={{
-                available: { 
-                  color: "#3b82f6",
-                  fontWeight: "600",
-                  backgroundColor: "rgba(59, 130, 246, 0.1)",
-                }
+              modifiersClassNames={{
+                available: "bg-primary/10 font-semibold text-primary",
               }}
               components={{
                 IconLeft: ({ ..._props }) => <ChevronLeft className="h-4 w-4" />,

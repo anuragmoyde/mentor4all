@@ -14,7 +14,7 @@ export const useAvailability = (mentorId: string) => {
     try {
       console.log('Fetching availability for mentor:', mentorId);
       
-      // Get current date and time in local timezone (which should be IST for Indian users)
+      // Get current date and time in local timezone
       const now = new Date();
       
       // Format date as YYYY-MM-DD for database query (in local timezone)
@@ -32,6 +32,7 @@ export const useAvailability = (mentorId: string) => {
         timezoneOffset: now.getTimezoneOffset()
       });
       
+      // This is the critical query - we ONLY fetch slots that are NOT booked (is_booked = false)
       const { data, error } = await supabase
         .from('mentor_availability')
         .select('*')

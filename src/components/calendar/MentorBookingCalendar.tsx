@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -155,7 +154,7 @@ const MentorBookingCalendar: React.FC<BookingCalendarProps> = ({
           .eq('id', sessionData.id);
       }
 
-      // Format date for display in toast notification
+      // Format date for display in toast notification - in local timezone
       const formattedDate = slotDateTime.toLocaleDateString('en-IN', {
         weekday: 'long',
         month: 'long',
