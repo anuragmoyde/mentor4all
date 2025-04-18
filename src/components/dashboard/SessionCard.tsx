@@ -48,17 +48,15 @@ const SessionCard: React.FC<SessionCardProps> = ({
   
   console.log('SessionCard rendering with dateTime:', dateTime);
   
-  // Parse the ISO date string to a Date object directly
-  // The date is stored in UTC in the database, and we want to display it in local time
-  const sessionDate = parseISO(dateTime);
+  // Parse the date and time components separately
+  const [datePart, timePart] = dateTime.split('T');
+  const [hours, minutes] = timePart.split(':').map(Number);
   
-  console.log('Session date parsed:', {
-    originalISOString: dateTime,
-    parsedLocalString: sessionDate.toString(),
-    parsedTimestamp: sessionDate.getTime(),
-  });
+  // Create a new date object in local timezone
+  const sessionDate = new Date(datePart);
+  sessionDate.setHours(hours, minutes, 0, 0);
   
-  // Format date for display in the local timezone (browser's timezone)
+  // Format date for display
   const formattedDate = format(sessionDate, 'EEEE, MMMM do');
   const formattedTime = format(sessionDate, 'h:mm a');
   
@@ -69,7 +67,9 @@ const SessionCard: React.FC<SessionCardProps> = ({
   console.log('Formatted display values:', {
     date: formattedDate,
     startTime: formattedTime,
-    endTime: endTimeFormatted
+    endTime: endTimeFormatted,
+    originalTime: dateTime,
+    parsedTime: sessionDate.toString()
   });
   
   const isPast = sessionDate < new Date();

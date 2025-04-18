@@ -72,11 +72,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setIsBooking(true);
 
     try {
-      // CRITICAL: First, check if the slot is still available
-      // This prevents double bookings by checking the current state in the database
+      // First, check if the slot is still available
       const { data: slotCheck, error: slotCheckError } = await supabase
         .from('mentor_availability')
-        .select('is_booked')
+        .select('is_booked, id')
         .eq('id', selectedSlot.id)
         .single();
         
@@ -94,55 +93,39 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return;
       }
 
-      // Create ISO-8601 formatted datetime string - store in UTC
-      const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
-      
-      // Log details about the time being booked
-      console.log('Session booking time details:', {
-        day: selectedSlot.day,
-        startTime: selectedSlot.startTime,
-        formattedISOString: dateTimeISO,
-        localTimeString: new Date(dateTimeISO).toLocaleString(),
-      });
-      
       // Calculate duration and price
       const startDateTime = new Date(`${selectedSlot.day}T${selectedSlot.startTime}`);
       const endDateTime = new Date(`${selectedSlot.day}T${selectedSlot.endTime}`);
       const durationMinutes = (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60);
       const sessionPrice = (hourlyRate / 60) * durationMinutes;
 
-      // IMPORTANT CHANGE: Mark the slot as booked first to prevent double bookings
-      const { error: slotError } = await supabase
-        .from('mentor_availability')
-        .update({ is_booked: true })
-        .eq('id', selectedSlot.id);
+      // Create ISO-8601 formatted datetime string
+      const dateTimeISO = `${selectedSlot.day}T${selectedSlot.startTime}:00`;
 
-      if (slotError) throw slotError;
+      // Start a transaction to book the session
+      const { data: sessionData, error: sessionError } = await supabase.rpc('book_session', {
+        p_mentor_id: mentorId,
+        p_mentee_id: user.id,
+        p_date_time: dateTimeISO,
+        p_duration: durationMinutes,
+        p_price: sessionPrice,
+        p_title: sessionTitle,
+        p_description: sessionDescription,
+        p_availability_id: selectedSlot.id
+      });
 
-      console.log('Slot marked as booked:', selectedSlot.id);
+      if (sessionError) {
+        console.error('Error booking session:', sessionError);
+        toast({
+          title: "Error booking session",
+          description: "There was a problem booking your session. Please try again.",
+          variant: "destructive"
+        });
+        setIsBooking(false);
+        return;
+      }
 
-      // Create the session
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('sessions')
-        .insert({
-          mentor_id: mentorId,
-          mentee_id: user.id,
-          date_time: dateTimeISO, // Store as ISO string in UTC
-          duration: durationMinutes,
-          price: sessionPrice,
-          title: sessionTitle,
-          description: sessionDescription,
-          status: 'scheduled',
-          payment_status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (sessionError) throw sessionError;
-
-      // Generate meeting URL for the session immediately
-      console.log('Generating meeting URL for newly created session');
-      
+      // Generate meeting URL for the session
       const meetingUrl = await createMeetingUrl({
         sessionId: sessionData.id,
         sessionTitle: sessionTitle || `Session with ${mentorName}`,
@@ -151,20 +134,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       });
 
       if (meetingUrl) {
-        console.log('Successfully generated meeting URL:', meetingUrl);
         await supabase
           .from('sessions')
           .update({ meeting_url: meetingUrl })
           .eq('id', sessionData.id);
-      } else {
-        console.warn('Could not generate meeting URL during booking');
       }
 
-      // Format date for display in toast - using the browser's timezone
-      const formattedDate = slotDateTime.toLocaleDateString('en-IN', {
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
+      // Format date for display in toast
+      const formattedDate = new Date(dateTimeISO).toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
         day: 'numeric'
       });
       
